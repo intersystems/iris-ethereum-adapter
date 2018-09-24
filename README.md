@@ -5,6 +5,10 @@ InterSystems IRIS Interoperability Adapter for Ethereum
 ```
 npm install
 ```
+and run 
+```
+node server.js
+```
 
 2. Install Adapter classes - in IRIS terminal
 ```
