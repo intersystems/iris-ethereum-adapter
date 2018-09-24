@@ -2,14 +2,14 @@ Class Build.EthereumAdapter Extends %RegisteredObject
 {
 
 /// This method prompts the user for the name of the directory that contains the downloaded files 
-/// and then builds the sample.
+/// and then builds the adapter.
 ClassMethod Build()
 {
-    write !, "This is the setup method for the Demo-Loan sample, which is meant for "
+    write !, "This is the setup method for the IRIS-Ethereum Adapter, which is meant for "
     write !, "use with the InterSystems IRIS Interoperability capabilities. "
         
     write !!, "To continue, please specify the full path of the directory that contains this "
-    write !, "sample. (This is the directory that contains the README.md and LICENSE files.)",!
+    write !, "adapter. (This is the directory that contains the README.md and LICENSE files.)",!
     read "Your input: ",stagingroot
     if ($ZSTRIP(stagingroot,"<>W")="") {
         write !, "Not a valid directory. Quitting..."
@@ -25,13 +25,13 @@ ClassMethod Build()
     
     if OK {
         write !!, "Setup successfully finished"
-        write !, "See the README.md file for details on this sample and links to documentation."
+        write !, "See the README.md file for details."
     } else {
         write !!, "Setup was unsuccessful. Make sure that the directory you specified"
-        write !, "contains the sample files for Demo-Loan sample."
+        write !, "contains the adapter classes."
     }
 }
-/// This method enables you to build the sample with a minimum of output to the Terminal.
+/// This method enables you to build the code with a minimum of output to the Terminal.
 /// <var>stagingroot</var> is the name of the directory that contains the downloaded files. 
 /// <var>interactive</var> controls whether this method displays output.
 /// <methodname>Build</methodname> calls this method with interactive=1.
