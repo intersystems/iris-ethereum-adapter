@@ -10,7 +10,7 @@ This adapter allows you to perform basic operations in ethereum:
 
 This adapter consists of 2 parts.
 One of its parts is a Nodejs application that must be run
-before launching products that use business operations with this adapter.
+before launching production that use business operations with this adapter.
 
 ## Installation
 1. In nodejs folder install all necessary libs 
