@@ -26,7 +26,7 @@ Class Ethereum.NodeJS.OutboundAdapter extends EnsLib.HTTP.OutboundAdapter
     {
         set ..Eth = ##class(Ethereum.Eth).%New($this)
         return:('$isObject(..Eth)) $$$ERROR($$$GeneralError, "Unable to create Eth object") 
-        do ..SetDeferredOptions(..DeferredResponseHost,..DeferredResponsePort,..DeferredResponsePath)
+        do ..SetDeferredOptions()
         return $$$OK
     }
     
@@ -58,12 +58,12 @@ Class Ethereum.NodeJS.OutboundAdapter extends EnsLib.HTTP.OutboundAdapter
 		quit request
 	}
 	
-	Method SetDeferredOptions(hostname As %String = "", port As %String = "", path As %String = "") As %Status
+	Method SetDeferredOptions() As %Status
 	{
 		set data = {
-		    "hostname":(hostname),
-		    "port":(port),
-		    "path":(path)
+		    "hostname":(..DeferredResponseHost),
+		    "port":(..DeferredResponsePort),
+		    "path":(..DeferredResponsePath)
 		}
 		set tSC = ..SendFormDataArray(.pHttpResponse, "POST", ..GetRequest(..URL_"/setDeferredOptions",data.%ToJSON()))
         return tSC

@@ -11,7 +11,7 @@ Parameter SETTINGS = "ContractFolder:Ethereum,Credentials:Ethereum:credentialsSe
 
 Property Credentials As %String;
 
-Property ContractFolder As %String;
+Property ContractFolder As %String (MAXLEN=1000);
 
 Property ContractABI As %Library.DynamicAbstractObject;
 

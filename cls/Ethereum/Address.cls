@@ -24,6 +24,7 @@ Class Ethereum.Address Extends %RegisteredObject
 	ClassMethod IsAddress(val as %String) as %Status
 	{
 		try {
+		    set val = $ZCVT(val,"L")
 			if '$MATCH(val, ..#REGEX) {
 				return $$$ERROR($$$GeneralError, "String "_val_" is not a valid ethereum address")
 			}
