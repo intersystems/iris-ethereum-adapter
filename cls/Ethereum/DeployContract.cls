@@ -34,7 +34,6 @@ Class Ethereum.DeployContract Extends %RegisteredObject
             }
         } catch e {
             #dim e as %Exception.AbstractException
-            w "$$$$$"_e.DisplayString()
             return e.AsStatus()
         }
         return $$$OK

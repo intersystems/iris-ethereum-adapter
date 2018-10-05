@@ -6,7 +6,7 @@ Property Adapter As Ethereum.NodeJS.OutboundAdapter;
 
 Parameter INVOCATION = "Queue";
 
-Method Test(pInput As Ens.StringRequest, Output pOutput As Ens.StringResponse) As %Status
+Method Test(pInput As Ens.StringContainer, Output pOutput As Ens.StringContainer) As %Status
 {
     try {
         #dim contract as Ethereum.Contract
@@ -70,13 +70,13 @@ Method Test(pInput As Ens.StringRequest, Output pOutput As Ens.StringResponse) A
             set contract = ..Adapter.GetContract(##class(Ethereum.Address).%New(contractAddress),contractABI.%ToJSON())
             set result = contract.hello()
             $$$TRACE(result.%ToJSON())
-            set pOutput = ##class(Ens.StringResponse).%New()
+            set pOutput = ##class(Ens.StringContainer).%New()
             set pOutput.StringValue = result.%ToJSON()
         } elseif (pInput.StringValue = "BlockNumber") {
             $$$TRACE("BlockNumber")
             set blockNumber = ..Adapter.Eth.GetBlockNumber()
             $$$TRACE(blockNumber)
-            set pOutput = ##class(Ens.StringResponse).%New()
+            set pOutput = ##class(Ens.StringContainer).%New()
             set pOutput.StringValue = blockNumber
 
         } elseif (pInput.StringValue = "GetBalance") {
@@ -90,49 +90,49 @@ Method Test(pInput As Ens.StringRequest, Output pOutput As Ens.StringResponse) A
             set balance = ..Adapter.Eth.GetBalance(##class(Ethereum.Address).%New("0x81b7E08F65Bdf5648606c89998A9CC8164397647"))
             $$$TRACE("current balance "_balance.ToEther())
 
-            set pOutput = ##class(Ens.StringResponse).%New()
+            set pOutput = ##class(Ens.StringContainer).%New()
             set pOutput.StringValue = balance.ToEther()
             
         } elseif (pInput.StringValue = "GetBlock") {
             $$$TRACE("GetBlock")
             set block = ..Adapter.Eth.GetBlock("latest",1)
             $$$TRACE(block.%ToJSON())
-            set pOutput = ##class(Ens.StringResponse).%New()
+            set pOutput = ##class(Ens.StringContainer).%New()
             set pOutput.StringValue = block.%ToJSON()
         } elseif (pInput.StringValue = "GasPrice") {
             #dim gas as Ethereum.Wei
             $$$TRACE("GasPrice")
             set gas = ..Adapter.Eth.GetGasPrice()
             $$$TRACE("wei: "_gas.WeiGet()_"; eth: "_gas.ToEther())
-            set pOutput = ##class(Ens.StringResponse).%New()
+            set pOutput = ##class(Ens.StringContainer).%New()
             set pOutput.StringValue = gas.WeiGet()
         } elseif ( pInput.StringValue = "GetStorageAt") {
             set storage = ..Adapter.Eth.GetStorageAt(##class(Ethereum.Address).%New("0xed63630279b510ad8a54b50a37488c3b343ce14d"),0)
-            set pOutput = ##class(Ens.StringResponse).%New()
+            set pOutput = ##class(Ens.StringContainer).%New()
             set pOutput.StringValue = storage
         } elseif ( pInput.StringValue = "GetCode") {
             set code = ..Adapter.Eth.GetCode(##class(Ethereum.Address).%New("0xed63630279b510ad8a54b50a37488c3b343ce14d"))
-            set pOutput = ##class(Ens.StringResponse).%New()
+            set pOutput = ##class(Ens.StringContainer).%New()
             set pOutput.StringValue = code
         } elseif ( pInput.StringValue = "GetBlockTransactionCount") {
             set txnum = ..Adapter.Eth.GetBlockTransactionCount()
-            set pOutput = ##class(Ens.StringResponse).%New()
+            set pOutput = ##class(Ens.StringContainer).%New()
             set pOutput.StringValue = txnum
         } elseif ( pInput.StringValue = "GetTransaction") {
             set transaction = ..Adapter.Eth.GetTransaction("0x88c1bd22180d2cad98f08849a10033f06ad8b7da94169e1fa8802377fabf1369")
-            set pOutput = ##class(Ens.StringResponse).%New()
+            set pOutput = ##class(Ens.StringContainer).%New()
             set pOutput.StringValue = transaction.%ToJSON()
         } elseif ( pInput.StringValue = "GetTransactionFromBlock") {
             set transaction = ..Adapter.Eth.GetTransactionFromBlock()
-            set pOutput = ##class(Ens.StringResponse).%New()
+            set pOutput = ##class(Ens.StringContainer).%New()
             set pOutput.StringValue = transaction.%ToJSON()
         } elseif ( pInput.StringValue = "GetTransactionReceipt") {
             set transaction = ..Adapter.Eth.GetTransactionReceipt("0x88c1bd22180d2cad98f08849a10033f06ad8b7da94169e1fa8802377fabf1369")
-            set pOutput = ##class(Ens.StringResponse).%New()
+            set pOutput = ##class(Ens.StringContainer).%New()
             set pOutput.StringValue = transaction.%ToJSON()
         } elseif ( pInput.StringValue = "GetTransactionCount") {
             set num = ..Adapter.Eth.GetTransactionCount(##class(Ethereum.Address).%New("0x52033646a5688528c5e9ba14ddb55ec98b6a384f"))
-            set pOutput = ##class(Ens.StringResponse).%New()
+            set pOutput = ##class(Ens.StringContainer).%New()
             set pOutput.StringValue = num
         }
 
@@ -146,7 +146,7 @@ Method Test(pInput As Ens.StringRequest, Output pOutput As Ens.StringResponse) A
 
 XData MessageMap {
 <MapItems>
-    <MapItem MessageType="Ens.StringRequest">
+    <MapItem MessageType="Ens.StringContainer">
         <Method>Test</Method>
     </MapItem>
 </MapItems>

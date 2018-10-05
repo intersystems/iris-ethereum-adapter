@@ -19,19 +19,19 @@ Property ContractBytecode As %String;
 
 Property ContractAddress As %String;
 
-Method GetBalance(pRequest As Ethereum.Demo.BalanceRequest, Output pResponse As Ens.StringResponse) As %Status
+Method GetBalance(pRequest As Ethereum.Demo.BalanceRequest, Output pResponse As Ens.StringContainer) As %Status
 {
 	try { 
 		set address = ##class(Ethereum.Address).%New(pRequest.Account)
 		set result = ..Adapter.Eth.GetBalance(address) // result - object of class Ethereum.Wei 
-		set pResponse = ##class(Ens.StringResponse).%New(result.ToEther())
+		set pResponse = ##class(Ens.StringContainer).%New(result.ToEther())
 	} catch ex {
 		return ex.AsStatus()
 	}
 	return $$$OK
 }
 
-Method DeployContract(pRequest As Ethereum.Demo.DeployContractRequest, Output pResponse As Ens.StringResponse) As %Status
+Method DeployContract(pRequest As Ethereum.Demo.DeployContractRequest, Output pResponse As Ens.StringContainer) As %Status
 {
 	try {
 		set ..ContractFolder = pRequest.PathToContract
@@ -59,7 +59,7 @@ Method DeployContract(pRequest As Ethereum.Demo.DeployContractRequest, Output pR
 
         //deploy contract                           
         set result = deployContract.Deploy()
-        set pResponse = ##class(Ens.StringResponse).%New(result.transactionHash)
+        set pResponse = ##class(Ens.StringContainer).%New(result.transactionHash)
 		
 	} catch ex {
 		return ex.AsStatus()
@@ -67,7 +67,7 @@ Method DeployContract(pRequest As Ethereum.Demo.DeployContractRequest, Output pR
 	return $$$OK
 }
 
-Method SetName(pRequest As Ethereum.Demo.SetNameRequest, Output pResponse As Ens.StringResponse) As %Status
+Method SetName(pRequest As Ethereum.Demo.SetNameRequest, Output pResponse As Ens.StringContainer) As %Status
 {
 	try {
         // getting EthereumAccount(wallet) and privateKey
@@ -98,7 +98,7 @@ Method SetName(pRequest As Ethereum.Demo.SetNameRequest, Output pResponse As Ens
 	return $$$OK
 }
 
-Method Hello(pRequest As Ethereum.Demo.HelloRequest, Output pResponse As Ens.StringResponse) As %Status
+Method Hello(pRequest As Ethereum.Demo.HelloRequest, Output pResponse As Ens.StringContainer) As %Status
 {
 	try {
 		//reading contract ABI
@@ -108,7 +108,7 @@ Method Hello(pRequest As Ethereum.Demo.HelloRequest, Output pResponse As Ens.Str
 		
 		set contract = ..Adapter.GetContract(##class(Ethereum.Address).%New(..ContractAddress),..ContractABI)
         set result = contract.hello()
-        set pResponse = ##class(Ens.StringResponse).%New(result.args)
+        set pResponse = ##class(Ens.StringContainer).%New(result.args)
 	} catch ex {
 		return ex.AsStatus()
 	}
