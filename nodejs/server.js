@@ -197,23 +197,24 @@ function getLastBlockNumber(res, provider) {
 @param walletAddress the address of wallet from which will call the method
 @param key private key from wallet
 @param abi smart contract ABI
-@param byteCode smart contract bty
+@param byteCode smart contract byte code
+@param args parameters for constructor of smart contract 
 @return Returns JSON object that contains the result of a method. Or returns an error
 */
-function deployContract(res,provider,walletAddress , key, abi, byteCode,gasLimit,gasPrice, responseToken)
+function deployContract(res,provider,walletAddress , key, abi, byteCode,gasLimit,gasPrice, responseToken, args)
 {
-    web3.setProvider(new web3.providers.HttpProvider(provider));    
-    
+    web3.setProvider(new web3.providers.HttpProvider(provider));
     var privateKey = "0x" + key
     var contractInstance = new web3.eth.Contract(abi);
     var contractToDeploy = contractInstance.deploy({
-        data: byteCode
+        data: byteCode,
+        arguments : args
         }).encodeABI();
   var tx = {
     from: walletAddress,
     nonce: web3.eth.getTransactionCount(walletAddress),
-    gasLimit:gasLimit,// 2100000,
-    gasPrice: gasPrice,//web3.utils.toWei("0.000000001", "ether"),
+    gasLimit:gasLimit,
+    gasPrice: gasPrice,
     data: contractToDeploy
   }; 
   
@@ -366,8 +367,8 @@ app.post('/callContractSetMethod',function(req,res){
         ,req.body.name,req.body.amount,req.body.gasLimit,req.body.gasPrice,req.body.args, req.body.responseToken);
     })
 
-app.post('/deployContract',function(req,res){
-        deployContract(res,req.body.provider,req.body.walletAddress , req.body.key,  req.body.abi, req.body.byteCode,req.body.gasLimit,req.body.gasPrice, req.body.responseToken);
+    app.post('/deployContract',function(req,res){
+        deployContract(res,req.body.provider,req.body.walletAddress , req.body.key,  req.body.abi, req.body.byteCode,req.body.gasLimit,req.body.gasPrice, req.body.responseToken, req.body.args);
     })
 
 app.post('/getTransactionReceipt',function(req,res){
