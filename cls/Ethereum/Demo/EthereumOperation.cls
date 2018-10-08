@@ -58,7 +58,7 @@ Method DeployContract(pRequest As Ethereum.Demo.DeployContractRequest, Output pR
                                     ##class(Ethereum.Wei).%New(2100000))
 
         //deploy contract                           
-        set result = deployContract.Deploy()
+        set result = deployContract.Deploy("test")
         set pResponse = ##class(Ens.StringContainer).%New(result.transactionHash)
 		
 	} catch ex {
