@@ -1,7 +1,7 @@
 Class Ethereum.Demo.DeployContractRequest Extends Ens.Request
 {
 
-Property PathToContract As %String;
+Property PathToContract As %String (MAXLEN=1000);
 
 Storage Default
 {

@@ -78,7 +78,7 @@ Class Ethereum.NodeJS.OutboundAdapter extends EnsLib.HTTP.OutboundAdapter
         $$$TRACE(data.%ToJSON())
         set tSC = ..SendFormDataArray(.pHttpResponse, "POST", ..GetRequest(..URL_"/callWeb3Method",data.%ToJSON()))
 		if ($$$ISERR(tSC)) {
-		    if (pHttpResponse.StatusCode="400") {
+		    if ( $isobject(pHttpResponse)&&(pHttpResponse.StatusCode="400")) {
 		        set err = {}.%FromJSON(pHttpResponse.Data)
 		        set tSC = $$$ERROR($$$GeneralError, err.message)
 		    } 
