@@ -5,6 +5,11 @@ contract HelloContract {
     using strings for *;
     
     string name;
+    
+    constructor(string initName) public
+    {
+        name = initName;
+    }
 
     function setName(string newName) public
     {
