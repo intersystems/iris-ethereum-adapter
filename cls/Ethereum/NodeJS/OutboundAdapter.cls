@@ -116,7 +116,9 @@ Class Ethereum.NodeJS.OutboundAdapter extends EnsLib.HTTP.OutboundAdapter
     } 
 
 	Method DeployContract(Output jsonResponse as %Library.DynamicObject, accountAddress as Ethereum.Address, accountKey as %String,
-	                        abi as %Library.DynamicArray, byteCode as %String, gasLimit as Ethereum.Wei, gasPrice as Ethereum.Wei, deferred as %String) as %Status
+	                        abi as %Library.DynamicArray, byteCode as %String, gasLimit as Ethereum.Wei, gasPrice as Ethereum.Wei, 
+	                        params as %Library.DynamicArray,
+	                        deferred as %String) as %Status
 	{
 		set data = {
 		    "provider": (..Provider),
@@ -126,6 +128,7 @@ Class Ethereum.NodeJS.OutboundAdapter extends EnsLib.HTTP.OutboundAdapter
 		    "byteCode":(byteCode),
 		    "gasLimit":(gasLimit.WeiGet()),
 		    "gasPrice":(gasPrice.WeiGet()),
+		    "args": (params),
 		    "responseToken":(deferred)
 		}
         set tSC = ..SendFormDataArray(.pHttpResponse, "POST", ..GetRequest(..URL_"/deployContract",data.%ToJSON()))

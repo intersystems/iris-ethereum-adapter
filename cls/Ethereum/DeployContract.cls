@@ -9,6 +9,7 @@ Class Ethereum.DeployContract Extends %RegisteredObject
     Property FromPrivateKey as %String [Private];
     Property GasPrice as Ethereum.Wei [Private ];
     Property GasLimit as Ethereum.Wei [Private ];
+    Property Deferred as %String [Private ];
 
     Property Adapter as Ethereum.NodeJS.OutboundAdapter;
     
@@ -39,7 +40,13 @@ Class Ethereum.DeployContract Extends %RegisteredObject
         return $$$OK
     }
     
-    Method SetOptions(account as Ethereum.Address, key as %String="", gas as Ethereum.Wei = "", gasLimit as Ethereum.Wei = "") as %Status
+    Method SetDeferred(deferred as %String = "") As %Status
+    {
+        set ..Deferred = deferred
+        return $$$OK
+    }
+    
+    Method SetOptions(account as Ethereum.Address, key as %String="", gas as Ethereum.Wei = "", gasLimit as Ethereum.Wei = "", deferred as %String = "") as %Status
     {
         if ('$data(account)) {
             return $$$ERROR($$$GeneralError, "account argument required")
@@ -49,6 +56,7 @@ Class Ethereum.DeployContract Extends %RegisteredObject
         }
         set ..FromAccount = account
         set ..FromPrivateKey = key
+        set ..Deferred = deferred
         
         if (gas="") {
             set ..GasPrice = ##class(Ethereum.Wei).%New(0)
@@ -65,9 +73,27 @@ Class Ethereum.DeployContract Extends %RegisteredObject
         return $$$OK
     }
     
-    Method Deploy(deferred as %String ="") as %Library.DynamicObject
+    Method ClearOptions() as %Status
     {
-        $$$ThrowOnError(..Adapter.DeployContract(.jsonResponse, ..FromAccount, ..FromPrivateKey, ..ABI, ..ByteCode,..GasLimit,..GasPrice,deferred))
+        set ..FromAccount = ""
+        set ..FromPrivateKey = ""
+        set ..Deferred = ""
+        set ..GasPrice = ##class(Ethereum.Wei).%New(0)
+        set ..GasLimit = ##class(Ethereum.Wei).%New(0)
+        
+        return $$$OK
+    }    
+    
+    Method Deploy(args...) as %Library.DynamicObject
+    {
+        set params = []
+        for i=1:1:args {
+            if ('$data(args(i))) {
+                throw ##class(%Exception.StatusException).CreateFromStatus($$$ERROR($$$GeneralError, "All arguments are required"))
+            }
+            do params.%Push(args(i))
+        }
+        $$$ThrowOnError(..Adapter.DeployContract(.jsonResponse, ..FromAccount, ..FromPrivateKey, ..ABI, ..ByteCode,..GasLimit,..GasPrice,params,..Deferred))
         return jsonResponse
     }
     

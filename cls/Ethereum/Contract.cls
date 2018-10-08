@@ -55,6 +55,12 @@ Class Ethereum.Contract Extends %RegisteredObject
 	    return $$$OK
 	}
 	
+    Method SetDeferred(deferred as %String = "") As %Status
+    {
+        set ..Deferred = deferred
+        return $$$OK
+    }	
+	
 	Method ClearOptions() as %Status
 	{
 	    set ..FromAccount = ""
