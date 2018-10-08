@@ -340,6 +340,54 @@ function callWeb3Method(res,provider,method,args)
         res.end(JSON.stringify({error: err.message}));
     }
 }
+function estimateGasSetMethod(res,provider,interface,contractAddress,walletAddress,method,amount,args)
+{
+    web3.setProvider(new web3.providers.HttpProvider(provider));
+    
+    var contract = new web3.eth.Contract(interface, contractAddress);
+    var transfer = contract.methods[method](...args);
+    var encodedABI = transfer.encodeABI();
+
+    var tx = {
+    from: walletAddress,
+    to: contractAddress,
+    value:amount,
+    data: encodedABI
+    }; 
+    
+    web3.eth.estimateGas(tx).then(result => {
+      console.log(result);
+          
+      res.write(JSON.stringify({gasLimit: result}));
+      res.end();
+    });
+  }
+
+  function estimateDeployContractdeployContract(res,provider,walletAddress , abi, byteCode , args)
+  {
+      web3.setProvider(new web3.providers.HttpProvider(provider));    
+      var contractInstance = new web3.eth.Contract(abi);
+      
+      web3.eth.getTransactionCount(walletAddress).then(nonce => {
+          var contractToDeploy = contractInstance.deploy({
+              data: byteCode,
+              arguments: args
+              }).encodeABI();
+              var tx = {
+                  from: walletAddress,
+                  nonce: nonce,
+                  data: contractToDeploy
+              }; 
+              
+              web3.eth.estimateGas(tx).then(result => {
+                  console.log(result);
+                      
+                  res.write(JSON.stringify({gasLimit: result}));
+                  res.end();
+              });
+      });
+      
+  }
 
 
 app.post('/callWeb3Method',function(req,res){
@@ -380,6 +428,16 @@ app.post('/setDeferredOptions', function(req,res){
     responsePath = req.body.path;
 
     res.end("succeeded");
+})
+
+app.post('/estimateDeployContractdeployContract',function(req,res){
+    estimateDeployContractdeployContract(res,req.body.provider,req.body.walletAddress 
+        ,req.body.abi,req.body.byteCode,req.body.args);
+    })
+
+app.post('/estimateGasSetMethod',function(req,res){
+estimateGasSetMethod(res,req.body.provider, req.body.interface, req.body.contractAddress,req.body.walletAddress 
+    ,req.body.name,req.body.amount,req.body.args);
 })
 
 app.listen(3000,'localhost')
