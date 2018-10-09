@@ -49,10 +49,10 @@ Class Ethereum.DeployContract Extends %RegisteredObject
     Method SetOptions(account as Ethereum.Address, key as %String="", gas as Ethereum.Wei = "", gasLimit as Ethereum.Wei = "", deferred as %String = "") as %Status
     {
         if ('$data(account)) {
-            return $$$ERROR($$$GeneralError, "account argument required")
+            $$$ThrowStatus($$$ERROR($$$GeneralError, "account argument required"))
         }
         if ('$IsObject(account) || (account.%ClassName(1)'="Ethereum.Address")) {
-            return $$$ERROR($$$GeneralError, "account argument must be an object Ethereum.Address")
+            $$$ThrowStatus($$$ERROR($$$GeneralError, "account argument must be an object Ethereum.Address"))
         }
         set ..FromAccount = account
         set ..FromPrivateKey = key
