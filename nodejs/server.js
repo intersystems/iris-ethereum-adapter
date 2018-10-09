@@ -6,10 +6,6 @@
 // ethereumjs-tx 
 // eth-lightwallet
 var Web3 = require('web3');
-var util = require('ethereumjs-util');
-var tx = require('ethereumjs-tx');
-var lightwallet = require('eth-lightwallet');
-var txutils = lightwallet.txutils;
 
 var hostName;
 var portNumber;
@@ -55,17 +51,22 @@ const web3 = new Web3();
 @param args arguments of method that will be called
 @return Returns JSON object that contains the result of a method. Or returns an error
 */
-function callContractGetMethod(res,provider,interface,contractAddress,method,args){
+function callContractGetMethod(res, provider, interface, contractAddress, method, args) {
+    try {
     web3.setProvider(new web3.providers.HttpProvider(provider));
-    var contract = new web3.eth.Contract(interface,contractAddress);
-    contract.methods[method](...args).call(function(err, result) {
-        if(err) {
-            console.log(err);
-            res.end(err);
-        } else {
-            res.end(JSON.stringify({ args: result }));
-        }
-    });
+        var contract = new web3.eth.Contract(interface, contractAddress);
+        contract.methods[method](...args).call(function (err, result) {
+            if (err) {
+                console.log(err);
+                res.end(JSON.stringify({ status: 0, error: err }));
+            } else {
+                res.end(JSON.stringify({ status: 1, data: { args: result } }));
+            }
+        });
+    }
+    catch (err) {
+        res.end(JSON.stringify({ status: 0, error: err.message }));
+    }
 }
 /**
 @brief Call Contract Set Method
@@ -82,47 +83,54 @@ function callContractGetMethod(res,provider,interface,contractAddress,method,arg
 @param args arguments of method that will be called
 @return Returns JSON object that contains the transaction hash. Or returns an error
 */
-function callContractSetMethod(res,provider,interface,contractAddress,walletAddress,key,method,amount,gasLimit,gasPrice,args, responseToken)
-{
-    web3.setProvider(new web3.providers.HttpProvider(provider));
-    
-    var privateKey = "0x" + key
-    var contract = new web3.eth.Contract(interface, contractAddress);
-    var transfer = contract.methods[method](...args);
-    var encodedABI = transfer.encodeABI();
+function callContractSetMethod(res, provider, interface, contractAddress, walletAddress, key, method, amount, gasLimit, gasPrice, args, responseToken) {
+    try {
+        web3.setProvider(new web3.providers.HttpProvider(provider));
 
-    var tx = {
-    from: walletAddress,
-    to: contractAddress,
-    gasLimit: gasLimit,
-    gasPrice: gasPrice,//web3.utils.toWei("0.000000001", "ether"),
-    value:amount,//web3.utils.toWei(amount, "ether") ,
-    data: encodedABI
-    }; 
-  
-    web3.eth.accounts.signTransaction(tx, privateKey).then(signed => {
-    var tran = web3.eth.sendSignedTransaction(signed.rawTransaction);
+        var privateKey = "0x" + key
+        var contract = new web3.eth.Contract(interface, contractAddress);
+        var transfer = contract.methods[method](...args);
+        var encodedABI = transfer.encodeABI();
 
-    tran.on('confirmation', (confirmationNumber, receipt) => {
-      console.log('confirmation: ' + confirmationNumber);
-    });
+        var tx = {
+            from: walletAddress,
+            to: contractAddress,
+            gasLimit: gasLimit,
+            gasPrice: gasPrice,
+            value: amount,
+            data: encodedABI
+        };
 
-    tran.on('transactionHash', hash => {
-      console.log('hash');
-      console.log(hash);
-      
-      res.end(JSON.stringify({transactionHash: hash}));
-    });
+        web3.eth.accounts.signTransaction(tx, privateKey).then(signed => {
+            var tran = web3.eth.sendSignedTransaction(signed.rawTransaction);
 
-    tran.on('receipt', receipt => {
-      console.log('reciept');
-      console.log(receipt);
-      if(responseToken != "")
-      deferredRequest(responseToken , receipt);
-    });
+            tran.on('confirmation', (confirmationNumber, receipt) => {
+                console.log('confirmation: ' + confirmationNumber);
+            });
 
-    tran.on('error', console.error);
-  });
+            tran.on('transactionHash', hash => {
+                console.log('hash');
+                console.log(hash);
+
+                res.end(JSON.stringify({ status: 1, data: { transactionHash: hash } }));
+            });
+
+            tran.on('receipt', receipt => {
+                console.log('reciept');
+                console.log(receipt);
+                if (responseToken != "")
+                    deferredRequest(responseToken, 1, receipt);
+            });
+
+            tran.on('error', error => {
+                console.log(error);
+                deferredRequest(responseToken, 0, error);
+            });
+        });
+    }
+    catch (err) {
+        res.end(JSON.stringify({ status: 0, error: err.message }));
+    }
 }
 
 /**
@@ -132,15 +140,19 @@ function callContractSetMethod(res,provider,interface,contractAddress,walletAddr
 @param walletAddress The wallet address whose balance will be returned
 @return Returns JSON object that contains the wallet balance in wei. Or returns an error
 */
-function getBalance(res , provider , walletAddress )
-{
-    web3.setProvider(new web3.providers.HttpProvider(provider));
-    web3.eth.getBalance(walletAddress).then(function(balance) {
-        res.end(JSON.stringify({balance: parseFloat(balance).toPrecision(12)}));
-    }, function(err) {
-        console.log(err);
-    });
-   
+function getBalance(res, provider, walletAddress) {
+    try {
+        web3.setProvider(new web3.providers.HttpProvider(provider));
+        web3.eth.getBalance(walletAddress).then(function (balance) {
+            res.end(JSON.stringify({ status: 1, data: { balance: parseFloat(balance).toPrecision(12) } }));
+        }, function (err) {
+            console.log(err);
+            res.end(JSON.stringify({ status: 0, error: err }));
+        });
+    }
+    catch (err) {
+        res.end(JSON.stringify({ status: 0, error: err.message }));
+    }
 }
 
 
@@ -151,14 +163,19 @@ function getBalance(res , provider , walletAddress )
 @return Returns JSON object that contains lats block number. Or returns an error
 */
 function getLastBlockNumber(res, provider) {
-    web3.setProvider(new web3.providers.HttpProvider(provider));
-    web3.eth.getBlock('latest').then(function(result) {
-        res.end(JSON.stringify({"lastBlockNumber": result.number}));
-    }, function(err) {
-        console.log(err);
-    })
-  }
-
+    try {
+        web3.setProvider(new web3.providers.HttpProvider(provider));
+        web3.eth.getBlock('latest').then(function (result) {
+            res.end(JSON.stringify({ status: 1, data: { "lastBlockNumber": result.number } }));
+        }, function (err) {
+            console.log(err);
+            res.end(JSON.stringify({ status: 0, error: err }));
+        });
+    }
+    catch (err) {
+        res.end(JSON.stringify({ status: 0, error: err.message }));
+    }
+}
   /**
 @brief get Transaction Receipt
 @detailed Returns the receipt of a transaction by transaction hash.
@@ -180,12 +197,20 @@ function getLastBlockNumber(res, provider) {
 <li>status: String - '0x0' indicates transaction failure , '0x1' indicates transaction succeeded.</li>
 </ul>
 */
-  function getTransactionReceipt(res,provider,transactionHash){
-      web3.setProvider(new Web3.providers.HttpProvider(provider));
-      //var receipt = 
-      web3.eth.getTransactionReceipt(transactionHash).then(receipt=>   res.end(JSON.stringify({"transationReceipt": receipt})));
-      //res.end(JSON.stringify({"transationReceipt": receipt}));
-  }
+function getTransactionReceipt(res, provider, transactionHash) {
+    try {
+        web3.setProvider(new Web3.providers.HttpProvider(provider));
+        web3.eth.getTransactionReceipt(transactionHash).then(receipt => {
+            res.end(JSON.stringify({ status: 1, data: { "transationReceipt": receipt } }));
+        }, function (err) {
+            console.log(err);
+            res.end(JSON.stringify({ status: 0, error: err }));
+        });
+    }
+    catch (err) {
+        res.end(JSON.stringify({ status: 0, error: err.message }));
+    }
+}
 
 
   
@@ -201,194 +226,220 @@ function getLastBlockNumber(res, provider) {
 @param args parameters for constructor of smart contract 
 @return Returns JSON object that contains the result of a method. Or returns an error
 */
-function deployContract(res,provider,walletAddress , key, abi, byteCode,gasLimit,gasPrice, responseToken, args)
-{
-    web3.setProvider(new web3.providers.HttpProvider(provider));
-    var privateKey = "0x" + key
-    var contractInstance = new web3.eth.Contract(abi);
-    var contractToDeploy = contractInstance.deploy({
-        data: byteCode,
-        arguments : args
+function deployContract(res, provider, walletAddress, key, abi, byteCode, gasLimit, gasPrice, responseToken, args) {
+    try {
+        web3.setProvider(new web3.providers.HttpProvider(provider));
+        var privateKey = "0x" + key
+        var contractInstance = new web3.eth.Contract(abi);
+        var contractToDeploy = contractInstance.deploy({
+            data: byteCode,
+            arguments: args
         }).encodeABI();
-  var tx = {
-    from: walletAddress,
-    nonce: web3.eth.getTransactionCount(walletAddress),
-    gasLimit:gasLimit,
-    gasPrice: gasPrice,
-    data: contractToDeploy
-  }; 
-  
-  web3.eth.accounts.signTransaction(tx, privateKey).then(signed => {
-    var tran = web3.eth.sendSignedTransaction(signed.rawTransaction);
+        var tx = {
+            from: walletAddress,
+            nonce: web3.eth.getTransactionCount(walletAddress),
+            gasLimit: gasLimit,
+            gasPrice: gasPrice,
+            data: contractToDeploy
+        };
 
-    tran.on('confirmation', (confirmationNumber, receipt) => {
-      console.log('confirmation: ' + confirmationNumber);
-    });
+        web3.eth.accounts.signTransaction(tx, privateKey).then(signed => {
+            var tran = web3.eth.sendSignedTransaction(signed.rawTransaction);
 
-    tran.on('transactionHash', hash => {
-      console.log('hash');
-      console.log(hash);
-      
-      res.end(JSON.stringify({transactionHash: hash}));
-    });
+            tran.on('confirmation', (confirmationNumber, receipt) => {
+                console.log('confirmation: ' + confirmationNumber);
+            });
 
-    tran.on('receipt', receipt => {
-      console.log('reciept');
-      console.log(receipt);
-      console.log("receipt.contractAddress");
-      console.log(receipt.contractAddress);
-      if(responseToken != "")
-      deferredRequest(responseToken , receipt);
-    });
+            tran.on('transactionHash', hash => {
+                console.log('hash');
+                console.log(hash);
 
-    tran.on('error', console.error);
-  });
+                res.end(JSON.stringify({ status: 1, data: { transactionHash: hash } }));
+            });
 
- }
+            tran.on('receipt', receipt => {
+                console.log('reciept');
+                console.log(receipt);
+                console.log("receipt.contractAddress");
+                console.log(receipt.contractAddress);
+                if (responseToken != "")
+                    deferredRequest(responseToken, 1, receipt);
+            });
+
+            tran.on('error', error => {
+                console.log(error);
+                deferredRequest(responseToken, 0, error);
+            });
+        });
+    }
+    catch (err) {
+        res.end(JSON.stringify({ status: 0, error: err.message }));
+    }
+}
  
 
- function sendCoinTransaction(res,provider,fromWalletAddress, key , toWalletAddress , amount,responseToken, gasLimit , gasPrice){
-     
-    web3.setProvider(new web3.providers.HttpProvider(provider));
-    
-    var privateKey = "0x" + key;
-    var tx = {
-    from: fromWalletAddress,
-    to: toWalletAddress,
-    nonce: web3.eth.getTransactionCount(fromWalletAddress),
-    gasLimit: gasLimit,
-    gasPrice: gasPrice,//web3.utils.toWei("0.000000001", "ether"),
-    value: web3.utils.toWei(amount, "ether")
-  }; 
-  
-    web3.eth.accounts.signTransaction(tx, privateKey).then(signed => {
-    var tran = web3.eth.sendSignedTransaction(signed.rawTransaction);
+function sendCoinTransaction(res, provider, fromWalletAddress, key, toWalletAddress, amount, responseToken, gasLimit, gasPrice) {
+    try {
+        web3.setProvider(new web3.providers.HttpProvider(provider));
 
-    tran.on('confirmation', (confirmationNumber, receipt) => {
-      console.log('confirmation: ' + confirmationNumber);
-    });
+        var privateKey = "0x" + key;
+        var tx = {
+            from: fromWalletAddress,
+            to: toWalletAddress,
+            nonce: web3.eth.getTransactionCount(fromWalletAddress),
+            gasLimit: gasLimit,
+            gasPrice: gasPrice,
+            value: web3.utils.toWei(amount, "ether")
+        };
 
-    tran.on('transactionHash', hash => {
-      console.log('hash');
-      console.log(hash);
-      
-      res.end(JSON.stringify({transactionHash: hash}));
-    });
+        web3.eth.accounts.signTransaction(tx, privateKey).then(signed => {
+            var tran = web3.eth.sendSignedTransaction(signed.rawTransaction);
 
-    tran.on('receipt', receipt => {
-      console.log('reciept');
-      console.log(receipt);
-      deferredRequest(responseToken , receipt);
-    });
+            tran.on('confirmation', (confirmationNumber, receipt) => {
+                console.log('confirmation: ' + confirmationNumber);
+            });
 
-    tran.on('error', console.error);
-  });
- }
- 
-//http://localhost/eth/deferred
-//{
-//  "responsetoken":<tokenvalue>,
-//  "data": <тут все остальное> }
+            tran.on('transactionHash', hash => {
+                console.log('hash');
+                console.log(hash);
+
+                res.end(JSON.stringify({ status: 1, data: { transactionHash: hash } }));
+            });
+
+            tran.on('receipt', receipt => {
+                console.log('reciept');
+                console.log(receipt);
+                deferredRequest(responseToken, 1, receipt);
+            });
+
+            tran.on('error', error => {
+                console.log(error);
+                deferredRequest(responseToken, 0, error);
+            });
+        });
+    }
+    catch (err) {
+        res.end(JSON.stringify({ status: 0, error: err.message }));
+    }
+}
 
 
-//Method that allow to send notification to client that transaction is proved
-function deferredRequest(responseToken , data)
-{           
-    if( typeof hostName == 'undefined' || typeof portNumber == 'undefined' || typeof responsePath == 'undefined'){
+function deferredRequest(responseToken, status, data) {
+    if (typeof hostName == 'undefined' || typeof portNumber == 'undefined' || typeof responsePath == 'undefined') {
         console.log('DeferredOptions are empty');
     }
-    else{
+    else {
         var http = require("http");
         var options = {
-        hostname: hostName,
-        port: portNumber,
-        path: responsePath,
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        }
+            hostname: hostName,
+            port: portNumber,
+            path: responsePath,
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
         };
-        var req = http.request(options, function(res) {
-        console.log('Status: ' + res.statusCode);
-        console.log('Headers: ' + JSON.stringify(res.headers));
-        res.setEncoding('utf8');
-        res.on('data', function (body) {
-            console.log('Body: ' + body);
+        var req = http.request(options, function (res) {
+            console.log('Status: ' + res.statusCode);
+            console.log('Headers: ' + JSON.stringify(res.headers));
+            res.setEncoding('utf8');
+            res.on('data', function (body) {
+                console.log('Body: ' + body);
+            });
         });
+        req.on('error', function (e) {
+            console.log('problem with request: ' + e.message);
         });
-        req.on('error', function(e) {
-        console.log('problem with request: ' + e.message);
-        });
-        var dataToSend = JSON.stringify({responseToken: responseToken,data: data});
-        // write data to request body
+        var dataToSend;
+        if (status == 0)
+            dataToSend = JSON.stringify({ status: status, error: { responseToken: responseToken, data: data } });
+        else
+            dataToSend = JSON.stringify({ status: status, data: { responseToken: responseToken, data: data } });
         req.write(dataToSend);
         req.end();
     }
 }
 
-function callWeb3Method(res,provider,method,args)
-{
-    web3.setProvider(new web3.providers.HttpProvider(provider));
-    try{
-            web3.eth[method](...args).then(function(result) {
-                res.end(JSON.stringify(result));
-            }, function(err) {
-                console.log(err);
-            });
+
+function callWeb3Method(res, provider, method, args) {
+    try {
+        web3.setProvider(new web3.providers.HttpProvider(provider));
+
+        web3.eth[method](...args).then(function (result) {
+            res.end(JSON.stringify({ status: 1, data: result }));
+        }, function (err) {
+            console.log(err);
+            res.end(JSON.stringify({ status: 0, data: err }));
+        });
     }
-    catch(err){
+    catch (err) {
         res.statusCode = 400;
-        res.end(JSON.stringify({error: err.message}));
+        res.end(JSON.stringify({ status: 0, error: err.message }));
     }
 }
-function estimateGasSetMethod(res,provider,interface,contractAddress,walletAddress,method,amount,args)
-{
-    web3.setProvider(new web3.providers.HttpProvider(provider));
- 
-    var contract = new web3.eth.Contract(interface, contractAddress);
-    var transfer = contract.methods[method](...args);
-    var encodedABI = transfer.encodeABI();
 
-    var tx = {
-    from: walletAddress,
-    to: contractAddress,
-    value:amount,
-    data: encodedABI
-    }; 
-    
-    web3.eth.estimateGas(tx).then(result => {
-      console.log(result);
-          
-      res.write(JSON.stringify({gas: result}));
-      res.end();
-    });
-  }
 
-  function estimateGasDeployContract(res, provider, walletAddress, abi, byteCode , args)
-  {
-      web3.setProvider(new web3.providers.HttpProvider(provider));    
-      var contractInstance = new web3.eth.Contract(abi);
-      
-      web3.eth.getTransactionCount(walletAddress).then(nonce => {
-          var contractToDeploy = contractInstance.deploy({
-              data: byteCode,
-              arguments: args
-              }).encodeABI();
-              var tx = {
-                  from: walletAddress,
-                  nonce: nonce,
-                  data: contractToDeploy
-              }; 
-              
-              web3.eth.estimateGas(tx).then(result => {
-                  console.log(result);
-                      
-                  res.write(JSON.stringify({gas: result}));
-                  res.end();
-              });
-      });
-      
-  }
+
+function estimateGasSetMethod(res, provider, interface, contractAddress, walletAddress, method, amount, args) {
+    try {
+        web3.setProvider(new web3.providers.HttpProvider(provider));
+
+        var contract = new web3.eth.Contract(interface, contractAddress);
+        var transfer = contract.methods[method](...args);
+        var encodedABI = transfer.encodeABI();
+
+        var tx = {
+            from: walletAddress,
+            to: contractAddress,
+            value: amount,
+            data: encodedABI
+        };
+
+        web3.eth.estimateGas(tx).then(result => {
+            console.log(result);
+            res.write(JSON.stringify({ status: 1, data: { gas: result } }));
+            res.end();
+        }, function (err) {
+            console.log(err);
+            res.end(JSON.stringify({ status: 0, error: err }));
+        });
+    }
+    catch (err) {
+        res.end(JSON.stringify({ status: 0, error: err.message }));
+    }
+}
+
+  function estimateGasDeployContract(res, provider, walletAddress, abi, byteCode, args) {
+    try {
+        web3.setProvider(new web3.providers.HttpProvider(provider));
+        var contractInstance = new web3.eth.Contract(abi);
+
+        web3.eth.getTransactionCount(walletAddress).then(nonce => {
+            var contractToDeploy = contractInstance.deploy({
+                data: byteCode,
+                arguments: args
+            }).encodeABI();
+            var tx = {
+                from: walletAddress,
+                nonce: nonce,
+                data: contractToDeploy
+            };
+
+            web3.eth.estimateGas(tx).then(result => {
+                console.log(result);
+
+                res.write(JSON.stringify({ status: 1, data: { gas: result } }));
+                res.end();
+            }, function (err) {
+                console.log(err);
+                res.end(JSON.stringify({ status: 0, error: err }));
+            });
+        });
+    }
+    catch (err) {
+        res.end(JSON.stringify({ status: 0, error: err.message }));
+    }
+}
 
 
 app.post('/callWeb3Method',function(req,res){
@@ -418,7 +469,7 @@ app.post('/setDeferredOptions', function(req,res){
     portNumber = req.body.port;
     responsePath = req.body.path;
 
-    res.end("succeeded");
+    res.end(JSON.stringify({ status: 1, data: "succeeded" }))
 })
 
 app.post('/estimateGasDeployContract',function(req,res){
