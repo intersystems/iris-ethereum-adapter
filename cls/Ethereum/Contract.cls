@@ -118,7 +118,6 @@ Class Ethereum.Contract Extends %RegisteredObject
 	{
 	    set iter = ..ABI.%GetIterator()
 	    while iter.%GetNext(.key , .value ) {
-	        write key," ",value,!
 	        set methodName = value.%Get("name")
 	        if (value.%Get("constant")) {
 	            set methodType = "get"
@@ -132,34 +131,62 @@ Class Ethereum.Contract Extends %RegisteredObject
 	    }
 	}
 	
-	Method %DispatchMethod(method As %String, args...) as %Library.DynamicObject
+	Method ArgsToJSON(method As %String, args) As %Library.DynamicArray
 	{
-        if ('$data(args)) { set args = 0 }
-	    if $data(..Methods(method)) {
-	        if (args'=..Methods(method,"args")) {
+        set params = []
+        for i=1:1:args {
+            if ('$data(args(i))) {
+                throw ##class(%Exception.StatusException).CreateFromStatus($$$ERROR($$$GeneralError, "All arguments are required. Method "_method))
+            }
+            do params.%Push(args(i))
+        }	
+        return params	
+	}
+	
+	Method ValidateMethod(method As %String, args) As %Boolean
+	{
+		if $data(..Methods(method)) {
+            if (args'=..Methods(method,"args")) {
                 throw ##class(%Exception.StatusException).CreateFromStatus($$$ERROR($$$GeneralError, "Wrong number of arguments for get method "_method))
             }
-            set params = []
-            for i=1:1:args {
-                if ('$data(args(i))) {
-                    throw ##class(%Exception.StatusException).CreateFromStatus($$$ERROR($$$GeneralError, "All arguments are required. Method "_method))
-                }
-                do params.%Push(args(i))
+            return 1
+        } else {
+            throw ##class(%Exception.StatusException).CreateFromStatus($$$ERROR($$$GeneralError, "Method "_method_" is not defined in ABI"))
+        }
+        return 0
+	}
+	
+	Method EstimateGas(method As %String, args...) As %Library.DynamicAbstractObject
+	{
+	    if ('$data(args)) { set args = 0 }
+	    if (..ValidateMethod(method, .args)) {
+            set params = ..ArgsToJSON(method, .args)
+            if (..Methods(method)="set") {
+                $$$ThrowOnError(..Adapter.EstimateGasSetMethod(.jsonResponse, ..ABI, ..Address, ..FromAccount, method,..Amount,params))
+                return jsonResponse
+            } else {
+                return {"gas":0}
             }
-		    if (..Methods(method)="get") {
-		        $$$ThrowOnError(..Adapter.CallContractGetMethod(.jsonResponse, ..ABI, ..Address, method, params))
-		        return jsonResponse
-		    } elseif (..Methods(method)="set") {
+        }
+	}
+	
+	Method %DispatchMethod(method As %String, args...) as %Library.DynamicAbstractObject
+	{
+        if ('$data(args)) { set args = 0 }
+        if (..ValidateMethod(method, .args)) {
+            set params = ..ArgsToJSON(method, .args)
+            if (..Methods(method)="get") {
+                $$$ThrowOnError(..Adapter.CallContractGetMethod(.jsonResponse, ..ABI, ..Address, method, params))
+                return jsonResponse
+            } elseif (..Methods(method)="set") {
                 if (..FromAccount="") {
                     throw ##class(%Exception.StatusException).CreateFromStatus($$$ERROR($$$GeneralError, "FromAccount required for "_..Methods(method)_". Use SetOptions method"))
                 }
                 $$$ThrowOnError(..Adapter.CallContractSetMethod(.jsonResponse, ..ABI, ..Address, ..FromAccount, ..FromPrivateKey, method,..Amount,..GasLimit,..GasPrice,params,..Deferred))
                 return jsonResponse
-		    } else {
-		        throw ##class(%Exception.StatusException).CreateFromStatus($$$ERROR($$$GeneralError, "Unknown method type "_..Methods(method)))
-		    }
-		} else {
-		    throw ##class(%Exception.StatusException).CreateFromStatus($$$ERROR($$$GeneralError, "Method "_method_" is not defined in ABI"))
-		}
+            } else {
+                throw ##class(%Exception.StatusException).CreateFromStatus($$$ERROR($$$GeneralError, "Unknown method type "_..Methods(method)))
+            }
+        }
 	}
 }

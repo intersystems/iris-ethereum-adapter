@@ -86,6 +86,7 @@ Class Ethereum.DeployContract Extends %RegisteredObject
     
     Method Deploy(args...) as %Library.DynamicAbstractObject
     {
+        if ('$data(args)) { set args = 0 }
         set params = []
         for i=1:1:args {
             if ('$data(args(i))) {
@@ -99,6 +100,7 @@ Class Ethereum.DeployContract Extends %RegisteredObject
     
     Method EstimateGas(args...) As %Library.DynamicAbstractObject
     {
+        if ('$data(args)) { set args = 0 }
         set params = []
         for i=1:1:args {
             if ('$data(args(i))) {

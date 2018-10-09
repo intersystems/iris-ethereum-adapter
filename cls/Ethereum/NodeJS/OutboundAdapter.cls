@@ -77,7 +77,6 @@ Class Ethereum.NodeJS.OutboundAdapter extends EnsLib.HTTP.OutboundAdapter
             "name": (method),
             "args":(params)
         }   
-        $$$TRACE(data.%ToJSON())
         set tSC = ..SendFormDataArray(.pHttpResponse, "POST", ..GetRequest(..URL_"/callWeb3Method",data.%ToJSON()))
 		if ($$$ISERR(tSC)) {
 		    if ( $isobject(pHttpResponse)&&(pHttpResponse.StatusCode="400")) {
@@ -111,7 +110,6 @@ Class Ethereum.NodeJS.OutboundAdapter extends EnsLib.HTTP.OutboundAdapter
             "gasLimit":(gasLimit.WeiGet()),
             "gasPrice":(gasPrice.WeiGet())
         }
-        $$$TRACE(data.%ToJSON())
         set tSC = ..SendFormDataArray(.pHttpResponse, "POST", ..GetRequest(..URL_"/sendCoinTransaction",data.%ToJSON()))
         if ($$$ISOK(tSC)) {
             set jsonResponse = {"result":(pHttpResponse.Data.Read())}
@@ -140,7 +138,6 @@ Class Ethereum.NodeJS.OutboundAdapter extends EnsLib.HTTP.OutboundAdapter
 		    "abi":(abi),
 		    "byteCode":(byteCode)
 		}
-		$$$TRACE(data.%ToJSON())
         set tSC = ..SendFormDataArray(.pHttpResponse, "POST", ..GetRequest(..URL_"/deployContract",data.%ToJSON()))
         if ($$$ISOK(tSC)) {
             set jsonResponse = {}.%FromJSON(pHttpResponse.Data.Read())
@@ -166,6 +163,36 @@ Class Ethereum.NodeJS.OutboundAdapter extends EnsLib.HTTP.OutboundAdapter
            "args":(params)
         }
         set tSC = ..SendFormDataArray(.pHttpResponse, "POST", ..GetRequest(..URL_"/estimateGasDeployContract",data.%ToJSON()))
+        if ($$$ISOK(tSC)) {
+            set jsonResponse = {}.%FromJSON(pHttpResponse.Data.Read())
+        } else {
+            set exCustom = ##class(%Exception.StatusException).CreateFromStatus(tSC)
+            do exCustom.Log()
+        }
+        return tSC
+    }
+    
+    Method EstimateGasSetMethod(Output jsonResponse as %Library.DynamicObject,
+                                        abi as %Library.DynamicArray, 
+                                        contractAddress As Ethereum.Address,
+                                        accountAddress as Ethereum.Address,                                        
+                                        contractMethod as %String,
+                                        amount as Ethereum.Wei,
+                                        params as %Library.DynamicArray)
+    {
+        set jsonResponse = {}
+        set data = {
+           "provider": (..Provider),
+           "contractAddress":(contractAddress.Address),
+           "walletAddress": (accountAddress.Address),
+           "name":(contractMethod),
+           "args":(params),
+           "abi":(abi)
+        }
+        if ($G(amount) && amount.WeiGet()>0) {
+            set data.amount = amount.WeiGet()
+        }      
+        set tSC = ..SendFormDataArray(.pHttpResponse, "POST", ..GetRequest(..URL_"/estimateGasSetMethod",data.%ToJSON()))
         if ($$$ISOK(tSC)) {
             set jsonResponse = {}.%FromJSON(pHttpResponse.Data.Read())
         } else {

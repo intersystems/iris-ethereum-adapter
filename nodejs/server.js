@@ -344,7 +344,7 @@ function callWeb3Method(res,provider,method,args)
 function estimateGasSetMethod(res,provider,interface,contractAddress,walletAddress,method,amount,args)
 {
     web3.setProvider(new web3.providers.HttpProvider(provider));
-    
+ 
     var contract = new web3.eth.Contract(interface, contractAddress);
     var transfer = contract.methods[method](...args);
     var encodedABI = transfer.encodeABI();
@@ -359,7 +359,7 @@ function estimateGasSetMethod(res,provider,interface,contractAddress,walletAddre
     web3.eth.estimateGas(tx).then(result => {
       console.log(result);
           
-      res.write(JSON.stringify({gasLimit: result}));
+      res.write(JSON.stringify({gas: result}));
       res.end();
     });
   }
@@ -427,7 +427,7 @@ app.post('/estimateGasDeployContract',function(req,res){
     })
 
 app.post('/estimateGasSetMethod',function(req,res){
-estimateGasSetMethod(res,req.body.provider, req.body.interface, req.body.contractAddress,req.body.walletAddress 
+estimateGasSetMethod(res,req.body.provider, req.body.abi, req.body.contractAddress,req.body.walletAddress 
     ,req.body.name,req.body.amount,req.body.args);
 })
 

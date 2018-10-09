@@ -89,13 +89,16 @@ Method SetName(pRequest As Ethereum.Demo.SetNameRequest, Output pResponse As Ens
     	set ..ContractABI = [].%FromJSON(fileStream)			
 		
 		// get contract object
-		$$$TRACE(..ContractAddress)
 		set contract = ..Adapter.GetContract(##class(Ethereum.Address).%New(..ContractAddress),..ContractABI)
         $$$ThrowOnError(..DeferResponse(.deferred))
 
+        do contract.SetOptions(account)
+        
+        set gasJSON = contract.EstimateGas("setName",pRequest.Name)
+        $$$TRACE(gasJSON.gas)
         do contract.SetOptions(account, privateKey,
                                ##class(Ethereum.Wei).%New(1000000000), 
-                               ##class(Ethereum.Wei).%New(2100000),,deferred)
+                               ##class(Ethereum.Wei).%New(gasJSON.gas),,deferred)                              
             
         set result = contract.setName(pRequest.Name) 
         $$$TRACE(result.transactionHash)
