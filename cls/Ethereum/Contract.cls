@@ -26,10 +26,10 @@ Class Ethereum.Contract Extends %RegisteredObject
 	                    gasLimit as Ethereum.Wei = "", amount as Ethereum.Wei = "", deferred as %String = "") as %Status
 	{
 	    if ('$data(account)) {
-	        return $$$ERROR($$$GeneralError, "account argument required")
+	        $$$ThrowStatus($$$ERROR($$$GeneralError, "account argument required"))
 	    }
 	    if ('$IsObject(account) || (account.%ClassName(1)'="Ethereum.Address")) {
-	        return $$$ERROR($$$GeneralError, "account argument must be an object Ethereum.Address")
+	        $$$ThrowStatus($$$ERROR($$$GeneralError, "account argument must be an object Ethereum.Address"))
 	    }
 	    set ..FromAccount = account
 	    set ..FromPrivateKey = key
@@ -107,8 +107,6 @@ Class Ethereum.Contract Extends %RegisteredObject
 			                    options.deferred)
 			}
 		} catch e {
-		    #dim e as %Exception.AbstractException
-		    $$$TRACE(e.DisplayString())
 			return e.AsStatus()
 		}
 		return $$$OK
