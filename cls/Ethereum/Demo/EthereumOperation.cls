@@ -57,7 +57,15 @@ Method DeployContract(pRequest As Ethereum.Demo.DeployContractRequest, Output pR
                                     ##class(Ethereum.Wei).%New(1000000000), // 1Gwei 
                                     ##class(Ethereum.Wei).%New(2100000))
 
-        //deploy contract                           
+        // get Estimated Gas for this transaction
+        set gasJSON = deployContract.EstimateGas("test")
+        set gas = gasJSON.gas
+        $$$TRACE(gas)
+        
+        //deploy contract             
+        do deployContract.SetOptions(account, privateKey,
+                                    ##class(Ethereum.Wei).%New(1000000000), // 1Gwei 
+                                    ##class(Ethereum.Wei).%New(gas))              
         set result = deployContract.Deploy("test")
         set pResponse = ##class(Ens.StringContainer).%New(result.transactionHash)
 		

@@ -364,7 +364,7 @@ function estimateGasSetMethod(res,provider,interface,contractAddress,walletAddre
     });
   }
 
-  function estimateDeployContractdeployContract(res,provider,walletAddress , abi, byteCode , args)
+  function estimateGasDeployContract(res, provider, walletAddress, abi, byteCode , args)
   {
       web3.setProvider(new web3.providers.HttpProvider(provider));    
       var contractInstance = new web3.eth.Contract(abi);
@@ -383,7 +383,7 @@ function estimateGasSetMethod(res,provider,interface,contractAddress,walletAddre
               web3.eth.estimateGas(tx).then(result => {
                   console.log(result);
                       
-                  res.write(JSON.stringify({gasLimit: result}));
+                  res.write(JSON.stringify({gas: result}));
                   res.end();
               });
       });
@@ -395,32 +395,22 @@ app.post('/callWeb3Method',function(req,res){
 	callWeb3Method(res, req.body.provider,req.body.name, req.body.args);
     })
 
-app.post('/getLastBlockNumber',function(req,res){
-	getLastBlockNumber(res,req.body.provider);
-    })
-
-app.post('/getBalance',function(req,res){
-	getBalance(res,req.body.provider, req.body.walletAddress);
-    })
-
 app.post('/callContractGetMethod',function(req,res){
 	callContractGetMethod(res, req.body.provider, req.body.interface, req.body.contractAddress, req.body.name, req.body.args);
     })
+    
 app.post('/sendCoinTransaction',function(req,res){
-        sendCoinTransaction(res,req.body.provider, req.body.fromWalletAddress, req.body.key,req.body.toWalletAddress,req.body.amount 
-            ,req.body.responseToken,req.body.gasLimit,req.body.gasPrice);
-        })
+    sendCoinTransaction(res,req.body.provider, req.body.fromWalletAddress, req.body.key,req.body.toWalletAddress,req.body.amount 
+        ,req.body.responseToken,req.body.gasLimit,req.body.gasPrice);
+    })
+        
 app.post('/callContractSetMethod',function(req,res){
     callContractSetMethod(res,req.body.provider, req.body.interface, req.body.contractAddress,req.body.walletAddress,req.body.key 
         ,req.body.name,req.body.amount,req.body.gasLimit,req.body.gasPrice,req.body.args, req.body.responseToken);
     })
 
-    app.post('/deployContract',function(req,res){
-        deployContract(res,req.body.provider,req.body.walletAddress , req.body.key,  req.body.abi, req.body.byteCode,req.body.gasLimit,req.body.gasPrice, req.body.responseToken, req.body.args);
-    })
-
-app.post('/getTransactionReceipt',function(req,res){
-    getTransactionReceipt(res,req.body.provider,req.body.transactionHash);
+app.post('/deployContract',function(req,res){
+    deployContract(res,req.body.provider,req.body.walletAddress , req.body.key,  req.body.abi, req.body.byteCode,req.body.gasLimit,req.body.gasPrice, req.body.responseToken, req.body.args);
 })
 
 app.post('/setDeferredOptions', function(req,res){
@@ -431,8 +421,8 @@ app.post('/setDeferredOptions', function(req,res){
     res.end("succeeded");
 })
 
-app.post('/estimateDeployContractdeployContract',function(req,res){
-    estimateDeployContractdeployContract(res,req.body.provider,req.body.walletAddress 
+app.post('/estimateGasDeployContract',function(req,res){
+	estimateGasDeployContract(res,req.body.provider,req.body.walletAddress 
         ,req.body.abi,req.body.byteCode,req.body.args);
     })
 
