@@ -84,8 +84,9 @@ Class Ethereum.DeployContract Extends %RegisteredObject
         return $$$OK
     }    
     
-    Method Deploy(args...) as %Library.DynamicObject
+    Method Deploy(args...) as %Library.DynamicAbstractObject
     {
+        if ('$data(args)) { set args = 0 }
         set params = []
         for i=1:1:args {
             if ('$data(args(i))) {
@@ -96,5 +97,20 @@ Class Ethereum.DeployContract Extends %RegisteredObject
         $$$ThrowOnError(..Adapter.DeployContract(.jsonResponse, ..FromAccount, ..FromPrivateKey, ..ABI, ..ByteCode,..GasLimit,..GasPrice,params,..Deferred))
         return jsonResponse
     }
+    
+    Method EstimateGas(args...) As %Library.DynamicAbstractObject
+    {
+        if ('$data(args)) { set args = 0 }
+        set params = []
+        for i=1:1:args {
+            if ('$data(args(i))) {
+                throw ##class(%Exception.StatusException).CreateFromStatus($$$ERROR($$$GeneralError, "All arguments are required"))
+            }
+            do params.%Push(args(i))
+        }
+        $$$ThrowOnError(..Adapter.EstimateGasDeployContract(.jsonResponse, ..FromAccount, ..ABI, ..ByteCode, params))
+        return jsonResponse
+    }
+    
     
 }

@@ -69,19 +69,22 @@ Class Ethereum.NodeJS.OutboundAdapter extends EnsLib.HTTP.OutboundAdapter
         return tSC
 	} 
 	
-	Method CallWeb3Method(Output response, method As %String, params As %Library.DynamicArray) As %Status {
+	Method CallWeb3Method(Output response, method As %String, params As %Library.DynamicArray) As %Status 
+	{
+	    set response = {}
         set data = {
             "provider": (..Provider),
             "name": (method),
             "args":(params)
         }   
-        $$$TRACE(data.%ToJSON())
         set tSC = ..SendFormDataArray(.pHttpResponse, "POST", ..GetRequest(..URL_"/callWeb3Method",data.%ToJSON()))
 		if ($$$ISERR(tSC)) {
 		    if ( $isobject(pHttpResponse)&&(pHttpResponse.StatusCode="400")) {
 		        set err = {}.%FromJSON(pHttpResponse.Data)
 		        set tSC = $$$ERROR($$$GeneralError, err.message)
 		    } 
+		    set exCustom = ##class(%Exception.StatusException).CreateFromStatus(tSC)
+            do exCustom.Log()
 		} else {
             if ($isobject(pHttpResponse.Data)) {
                 set response = pHttpResponse.Data.Read()
@@ -96,6 +99,7 @@ Class Ethereum.NodeJS.OutboundAdapter extends EnsLib.HTTP.OutboundAdapter
                         toAddress as Ethereum.Address, amount as Ethereum.Wei, 
                         gasLimit as Ethereum.Wei, gasPrice as Ethereum.Wei, deferred as %String) as %Status
     {
+        set jsonResponse = {}
         set data = {
             "provider":(..Provider),
             "fromWalletAddress":(accountAddress.Address),
@@ -106,10 +110,12 @@ Class Ethereum.NodeJS.OutboundAdapter extends EnsLib.HTTP.OutboundAdapter
             "gasLimit":(gasLimit.WeiGet()),
             "gasPrice":(gasPrice.WeiGet())
         }
-        $$$TRACE(data.%ToJSON())
         set tSC = ..SendFormDataArray(.pHttpResponse, "POST", ..GetRequest(..URL_"/sendCoinTransaction",data.%ToJSON()))
         if ($$$ISOK(tSC)) {
             set jsonResponse = {"result":(pHttpResponse.Data.Read())}
+        } else {
+            set exCustom = ##class(%Exception.StatusException).CreateFromStatus(tSC)
+            do exCustom.Log()
         }
         return tSC
 
@@ -120,24 +126,82 @@ Class Ethereum.NodeJS.OutboundAdapter extends EnsLib.HTTP.OutboundAdapter
 	                        params as %Library.DynamicArray,
 	                        deferred as %String) as %Status
 	{
+	    set jsonResponse = {}
 		set data = {
 		    "provider": (..Provider),
 		    "walletAddress": (accountAddress.Address),
 		    "key":(accountKey),
+            "gasLimit":(gasLimit.WeiGet()),
+            "gasPrice":(gasPrice.WeiGet()),
+            "args": (params),
+            "responseToken":(deferred),		    
 		    "abi":(abi),
-		    "byteCode":(byteCode),
-		    "gasLimit":(gasLimit.WeiGet()),
-		    "gasPrice":(gasPrice.WeiGet()),
-		    "args": (params),
-		    "responseToken":(deferred)
+		    "byteCode":(byteCode)
 		}
         set tSC = ..SendFormDataArray(.pHttpResponse, "POST", ..GetRequest(..URL_"/deployContract",data.%ToJSON()))
         if ($$$ISOK(tSC)) {
             set jsonResponse = {}.%FromJSON(pHttpResponse.Data.Read())
+        } else {
+            set exCustom = ##class(%Exception.StatusException).CreateFromStatus(tSC)
+            do exCustom.Log()
         }
         return tSC
-
 	}
+	
+    Method EstimateGasDeployContract(Output jsonResponse as %Library.DynamicObject,
+                                        accountAddress as Ethereum.Address,
+                                        abi as %Library.DynamicArray, 
+                                        byteCode as %String,
+                                        params as %Library.DynamicArray)
+    {
+        set jsonResponse = {}
+        set data = {
+           "provider": (..Provider),
+           "walletAddress": (accountAddress.Address),
+           "abi":(abi),
+           "byteCode":(byteCode),
+           "args":(params)
+        }
+        set tSC = ..SendFormDataArray(.pHttpResponse, "POST", ..GetRequest(..URL_"/estimateGasDeployContract",data.%ToJSON()))
+        if ($$$ISOK(tSC)) {
+            set jsonResponse = {}.%FromJSON(pHttpResponse.Data.Read())
+        } else {
+            set exCustom = ##class(%Exception.StatusException).CreateFromStatus(tSC)
+            do exCustom.Log()
+        }
+        return tSC
+    }
+    
+    Method EstimateGasSetMethod(Output jsonResponse as %Library.DynamicObject,
+                                        abi as %Library.DynamicArray, 
+                                        contractAddress As Ethereum.Address,
+                                        accountAddress as Ethereum.Address,                                        
+                                        contractMethod as %String,
+                                        amount as Ethereum.Wei,
+                                        params as %Library.DynamicArray)
+    {
+        set jsonResponse = {}
+        set data = {
+           "provider": (..Provider),
+           "contractAddress":(contractAddress.Address),
+           "walletAddress": (accountAddress.Address),
+           "name":(contractMethod),
+           "args":(params),
+           "abi":(abi)
+        }
+        if ($G(amount) && amount.WeiGet()>0) {
+            set data.amount = amount.WeiGet()
+        }      
+        set tSC = ..SendFormDataArray(.pHttpResponse, "POST", ..GetRequest(..URL_"/estimateGasSetMethod",data.%ToJSON()))
+        if ($$$ISOK(tSC)) {
+            set jsonResponse = {}.%FromJSON(pHttpResponse.Data.Read())
+        } else {
+            set exCustom = ##class(%Exception.StatusException).CreateFromStatus(tSC)
+            do exCustom.Log()
+        }
+        return tSC
+    }
+	
 	
 	/// accountAddress -  wallet address,
 	/// accountKey - private key
@@ -152,6 +216,7 @@ Class Ethereum.NodeJS.OutboundAdapter extends EnsLib.HTTP.OutboundAdapter
 								params as %Library.DynamicArray,
 								deferred as %String) as %Status 
 	{
+	    set jsonResponse = {}
 		set data = {
 			"provider": (..Provider),
 			"contractAddress": (contractAddress.Address),
@@ -183,6 +248,7 @@ Class Ethereum.NodeJS.OutboundAdapter extends EnsLib.HTTP.OutboundAdapter
 	Method CallContractGetMethod(output jsonResponse as %Library.DynamicObject, abi as %Library.DynamicArray,
 								contractAddress as Ethereum.Address, contractMethod as %String, params as %Library.DynamicArray) as %Status 
 	{
+	    set jsonResponse = {}
 		set data = {
 			"provider": (..Provider),
 			"interface": (abi),
