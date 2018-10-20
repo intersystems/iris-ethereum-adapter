@@ -23,15 +23,26 @@ Method Test(pInput As Ens.StringContainer, Output pOutput As Ens.StringContainer
         /*** change next line after deploy contract ***/
         set contractAddress = ""
         
-        set accountAddress = ""
-        set accountKey = ""
-        set accountAddress2 = ""
+        set accountAddress = "0xcdA6a0B92b3017BB47576d81c7A1047a6350B5bd"
+        set accountKey = "7220C83951FBE55C9F6F0DB9EACD8A65F097CCB84CB850E549EA07D56ED1C22E"
+        set accountAddress2 = "0x52033646A5688528c5e9bA14dDB55EC98b6A384F"
+        
+        $$$ThrowOnError(..Adapter.SetDeferredOptions())
         
         if (pInput.StringValue = "Send") {
             $$$TRACE("Send fund")
             $$$ThrowOnError(..DeferResponse(.deferred))
-            $$$ThrowOnError(..Adapter.SendFunds(.result,##class(Ethereum.Address).%New(accountAddress),accountKey,##class(Ethereum.Address).%New(accountAddress2),##class(Ethereum.Wei).WeiFromEther(2),##class(Ethereum.Wei).%New(1000000000),##class(Ethereum.Wei).%New(2100000),deferred))
+            set st = ..Adapter.SendFunds(.result,##class(Ethereum.Address).%New(accountAddress),
+                            accountKey,
+                            ##class(Ethereum.Address).%New(accountAddress2),
+                            ##class(Ethereum.Wei).WeiFromEther(1),
+                            ##class(Ethereum.Wei).%New(1000000000),
+                            ##class(Ethereum.Wei).%New(210000),deferred)
+            $$$ThrowOnError(st)
             $$$TRACE(result.%ToJSON())
+            if (result.status=0) {
+                $$$ThrowStatus($$$ERROR($$$GeneralError, "Error: "_result.error))
+            }
             
         } elseif (pInput.StringValue = "Deploy") {
 
@@ -83,11 +94,11 @@ Method Test(pInput As Ens.StringContainer, Output pOutput As Ens.StringContainer
             $$$TRACE("GetBalance")
 
             // balance of the account in the first ethereum block
-            set balance = ..Adapter.Eth.GetBalance(##class(Ethereum.Address).%New("0xa0952608fc792a227c186d6aeb82e178032daefc"),1)
+            set balance = ..Adapter.Eth.GetBalance(##class(Ethereum.Address).%New("0xa0952608fc792a227c186d6aeb82e178032daef"),1)
             $$$TRACE("initial balance "_balance.ToEther())
 
 
-            set balance = ..Adapter.Eth.GetBalance(##class(Ethereum.Address).%New("0x81b7E08F65Bdf5648606c89998A9CC8164397647"))
+            set balance = ..Adapter.Eth.GetBalance(##class(Ethereum.Address).%New("0x81b7E08F65Bdf5648606c89998A9CC816439764"))
             $$$TRACE("current balance "_balance.ToEther())
 
             set pOutput = ##class(Ens.StringContainer).%New()
@@ -107,7 +118,7 @@ Method Test(pInput As Ens.StringContainer, Output pOutput As Ens.StringContainer
             set pOutput = ##class(Ens.StringContainer).%New()
             set pOutput.StringValue = gas.WeiGet()
         } elseif ( pInput.StringValue = "GetStorageAt") {
-            set storage = ..Adapter.Eth.GetStorageAt(##class(Ethereum.Address).%New("0xed63630279b510ad8a54b50a37488c3b343ce14d"),0)
+            set storage = ..Adapter.Eth.GetStorageAt(##class(Ethereum.Address).%New("0xed63630279b510ad8a54b50a37488c3b343ce14d"),1)
             set pOutput = ##class(Ens.StringContainer).%New()
             set pOutput.StringValue = storage
         } elseif ( pInput.StringValue = "GetCode") {
@@ -124,14 +135,22 @@ Method Test(pInput As Ens.StringContainer, Output pOutput As Ens.StringContainer
             set pOutput.StringValue = transaction.%ToJSON()
         } elseif ( pInput.StringValue = "GetTransactionFromBlock") {
             set transaction = ..Adapter.Eth.GetTransactionFromBlock()
-            set pOutput = ##class(Ens.StringContainer).%New()
-            set pOutput.StringValue = transaction.%ToJSON()
+            if (transaction'="") {
+                set pOutput = ##class(Ens.StringContainer).%New()
+                set pOutput.StringValue = transaction.%ToJSON()
+            } else {
+                $$$ThrowStatus($$$ERROR($$$GeneralError, "Empty data"))
+            }
         } elseif ( pInput.StringValue = "GetTransactionReceipt") {
             set transaction = ..Adapter.Eth.GetTransactionReceipt("0x88c1bd22180d2cad98f08849a10033f06ad8b7da94169e1fa8802377fabf1369")
-            set pOutput = ##class(Ens.StringContainer).%New()
-            set pOutput.StringValue = transaction.%ToJSON()
+            if (transaction'="") {
+                set pOutput = ##class(Ens.StringContainer).%New()
+                set pOutput.StringValue = transaction.%ToJSON()
+            } else {
+                $$$ThrowStatus($$$ERROR($$$GeneralError, "Empty data"))
+            }            
         } elseif ( pInput.StringValue = "GetTransactionCount") {
-            set num = ..Adapter.Eth.GetTransactionCount(##class(Ethereum.Address).%New("0x52033646a5688528c5e9ba14ddb55ec98b6a384f"))
+            set num = ..Adapter.Eth.GetTransactionCount(##class(Ethereum.Address).%New("0x52033646a5688528c5e9ba14ddb55ec98b6a384"))
             set pOutput = ##class(Ens.StringContainer).%New()
             set pOutput.StringValue = num
         }

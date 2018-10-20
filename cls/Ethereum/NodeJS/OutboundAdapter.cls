@@ -5,10 +5,10 @@ Class Ethereum.NodeJS.OutboundAdapter extends EnsLib.HTTP.OutboundAdapter
 
     Parameter SETTINGS = "Provider:Ethereum,DeferredResponseHost:Ethereum,DeferredResponsePort:Ethereum,DeferredResponsePath:Ethereum";
     
-    /// Enter full path to http provider you use to connect to Ethereum network
-    /// https://<network>.infura.io/<your-api-key>
-    /// get <your-api-key> at https://infura.io/
-    /// and choose <network> here https://infura.io/docs/gettingStarted/chooseaNetwork
+    /// Enter full path to http provider you use to connect to Ethereum network<br><br>
+    /// https://*network*.infura.io/*your-api-key*<br>
+    /// get *your-api-key* at https://infura.io/<br>
+    /// and choose *network* here https://infura.io/docs/gettingStarted/chooseaNetwork
     Property Provider;  
     
     // Deferred Response Host (e.g. localhost), IRIS web-server host, where IRIS is ready to receive requests
@@ -66,10 +66,11 @@ Class Ethereum.NodeJS.OutboundAdapter extends EnsLib.HTTP.OutboundAdapter
 		    "path":(..DeferredResponsePath)
 		}
 		set tSC = ..SendFormDataArray(.pHttpResponse, "POST", ..GetRequest(..URL_"/setDeferredOptions",data.%ToJSON()))
+		$$$TRACE(data.%ToJSON())
         return tSC
 	} 
 	
-	Method CallWeb3Method(Output response, method As %String, params As %Library.DynamicArray) As %Status 
+	Method CallWeb3Method(Output response As %Library.DynamicArray, method As %String, params As %Library.DynamicArray) As %Status 
 	{
 	    set response = {}
         set data = {
@@ -77,21 +78,20 @@ Class Ethereum.NodeJS.OutboundAdapter extends EnsLib.HTTP.OutboundAdapter
             "name": (method),
             "args":(params)
         }   
+        $$$TRACE(data.%ToJSON())
         set tSC = ..SendFormDataArray(.pHttpResponse, "POST", ..GetRequest(..URL_"/callWeb3Method",data.%ToJSON()))
 		if ($$$ISERR(tSC)) {
 		    if ( $isobject(pHttpResponse)&&(pHttpResponse.StatusCode="400")) {
 		        set err = {}.%FromJSON(pHttpResponse.Data)
-		        set tSC = $$$ERROR($$$GeneralError, err.message)
+		        set tSC = $$$ERROR($$$GeneralError, err.error)
 		    } 
 		    set exCustom = ##class(%Exception.StatusException).CreateFromStatus(tSC)
             do exCustom.Log()
+            throw exCustom
 		} else {
-            if ($isobject(pHttpResponse.Data)) {
-                set response = pHttpResponse.Data.Read()
-            } else {
-                set response = pHttpResponse.Data
-            }
+		    set response = {}.%FromJSON(pHttpResponse.Data)
 		}
+		$$$TRACE("adapter"_response.%ToJSON())
 		return tSC
 	}
 
@@ -110,9 +110,16 @@ Class Ethereum.NodeJS.OutboundAdapter extends EnsLib.HTTP.OutboundAdapter
             "gasLimit":(gasLimit.WeiGet()),
             "gasPrice":(gasPrice.WeiGet())
         }
+        do data.%Set("amount",amount.ToEther(),"string")
+        $$$TRACE(data.%ToJSON())
         set tSC = ..SendFormDataArray(.pHttpResponse, "POST", ..GetRequest(..URL_"/sendCoinTransaction",data.%ToJSON()))
         if ($$$ISOK(tSC)) {
-            set jsonResponse = {"result":(pHttpResponse.Data.Read())}
+            set res = {}.%FromJSON(pHttpResponse.Data)
+            $$$TRACE(res.%ToJSON())
+            if (res.status'=1) {
+                $$$ThrowStatus($$$ERROR($$$GeneralError, "Error: "_res.error))
+            }
+            set jsonResponse = res.data
         } else {
             set exCustom = ##class(%Exception.StatusException).CreateFromStatus(tSC)
             do exCustom.Log()
@@ -138,9 +145,15 @@ Class Ethereum.NodeJS.OutboundAdapter extends EnsLib.HTTP.OutboundAdapter
 		    "abi":(abi),
 		    "byteCode":(byteCode)
 		}
+		$$$TRACE(data.%ToJSON())
         set tSC = ..SendFormDataArray(.pHttpResponse, "POST", ..GetRequest(..URL_"/deployContract",data.%ToJSON()))
         if ($$$ISOK(tSC)) {
-            set jsonResponse = {}.%FromJSON(pHttpResponse.Data.Read())
+            set res = {}.%FromJSON(pHttpResponse.Data)
+            $$$TRACE(res.%ToJSON())
+            if (res.status'=1) {
+                $$$ThrowStatus($$$ERROR($$$GeneralError, "Error: "_res.error))
+            }
+            set jsonResponse = res.data
         } else {
             set exCustom = ##class(%Exception.StatusException).CreateFromStatus(tSC)
             do exCustom.Log()
@@ -162,9 +175,15 @@ Class Ethereum.NodeJS.OutboundAdapter extends EnsLib.HTTP.OutboundAdapter
            "byteCode":(byteCode),
            "args":(params)
         }
+        $$$TRACE(data.%ToJSON())
         set tSC = ..SendFormDataArray(.pHttpResponse, "POST", ..GetRequest(..URL_"/estimateGasDeployContract",data.%ToJSON()))
         if ($$$ISOK(tSC)) {
-            set jsonResponse = {}.%FromJSON(pHttpResponse.Data.Read())
+            set res = {}.%FromJSON(pHttpResponse.Data)
+            $$$TRACE(res.%ToJSON())
+            if (res.status'=1) {
+                $$$ThrowStatus($$$ERROR($$$GeneralError, "Error: "_res.error))
+            }
+            set jsonResponse = res.data
         } else {
             set exCustom = ##class(%Exception.StatusException).CreateFromStatus(tSC)
             do exCustom.Log()
@@ -192,9 +211,16 @@ Class Ethereum.NodeJS.OutboundAdapter extends EnsLib.HTTP.OutboundAdapter
         if ($G(amount) && amount.WeiGet()>0) {
             set data.amount = amount.WeiGet()
         }      
+        $$$TRACE(data.%ToJSON())
         set tSC = ..SendFormDataArray(.pHttpResponse, "POST", ..GetRequest(..URL_"/estimateGasSetMethod",data.%ToJSON()))
+        
         if ($$$ISOK(tSC)) {
-            set jsonResponse = {}.%FromJSON(pHttpResponse.Data.Read())
+            set res = {}.%FromJSON(pHttpResponse.Data)
+            $$$TRACE(res.%ToJSON())
+            if (res.status'=1) {
+                $$$ThrowStatus($$$ERROR($$$GeneralError, "Error: "_res.error))
+            }
+            set jsonResponse = res.data
         } else {
             set exCustom = ##class(%Exception.StatusException).CreateFromStatus(tSC)
             do exCustom.Log()
@@ -232,12 +258,19 @@ Class Ethereum.NodeJS.OutboundAdapter extends EnsLib.HTTP.OutboundAdapter
 		if ($G(amount) && amount.WeiGet()>0) {
 			set data.amount = amount.WeiGet()
 		}
+		$$$TRACE(data.%ToJSON())
 		set tSC = ..SendFormDataArray(.pHttpResponse, "POST", ..GetRequest(..URL_"/callContractSetMethod",data.%ToJSON()))
 		if ($$$ISOK(tSC)) {
-			set jsonResponse = {}.%FromJSON(pHttpResponse.Data)
+			set res = {}.%FromJSON(pHttpResponse.Data)
+			$$$TRACE(res.%ToJSON())
+			if (res.status'=1) {
+                $$$ThrowStatus($$$ERROR($$$GeneralError, "Error: "_res.error))
+            }
+            set jsonResponse = res.data
 		} else {
 		    set exCustom = ##class(%Exception.StatusException).CreateFromStatus(tSC)
             do exCustom.Log()
+            throw exCustom
 		}
 		return tSC
 	}
@@ -256,12 +289,21 @@ Class Ethereum.NodeJS.OutboundAdapter extends EnsLib.HTTP.OutboundAdapter
 			"contractAddress": (contractAddress.Address),
 			"args": (params)
 		}
+		$$$TRACE(data.%ToJSON())
 		set tSC = ..SendFormDataArray(.pHttpResponse, "POST", ..GetRequest(..URL_"/callContractGetMethod",data.%ToJSON()))
 		if ($$$ISOK(tSC)) {
-            set jsonResponse = {}.%FromJSON(pHttpResponse.Data)
+            set res = {}.%FromJSON(pHttpResponse.Data)
+
+            $$$TRACE(res.%ToJSON())
+
+            if (res.status'=1) {
+                $$$ThrowStatus($$$ERROR($$$GeneralError, "Error: "_res.error))
+            }
+            set jsonResponse = res.data
         } else {
             set exCustom = ##class(%Exception.StatusException).CreateFromStatus(tSC)
             do exCustom.Log()
+            throw exCustom
         }
 		return tSC
 	}

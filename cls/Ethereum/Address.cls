@@ -8,7 +8,8 @@ Class Ethereum.Address Extends %RegisteredObject
 	Method %OnNew(val as %String ) as %Status
 	{
 	    set val = $ZCVT(val,"L")
-		return ..AddressSet(val)
+	    $$$ThrowOnError(..AddressSet(val))
+		return $$$OK
 	}
 	
 	Method AddressSet(val as %String) as %Status

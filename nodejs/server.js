@@ -2,23 +2,73 @@
 // npm i express
 // npm i body-parser
 // npm install web3
-// ethereumjs-util 
-// ethereumjs-tx 
-// eth-lightwallet
+// npm install winston
+
 var Web3 = require('web3');
+var winston = require('winston');
 
 var hostName;
 var portNumber;
 var responsePath;
 
-var express = require('express')
-var bodyParser=require('body-parser');
-var app = express()
+const logger = winston.createLogger({
+    level: 'info',
+    format: winston.format.combine(
+        winston.format.timestamp({
+          format: 'YYYY-MM-DD HH:mm:ss'
+        }),
+        winston.format.json()),
+    transports: [
+      //
+      // - Write to all logs with level `info` and below to `combined.log` 
+      // - Write all logs error (and below) to `error.log`.
+      //
+      new winston.transports.File({ filename: 'D:\testtesttlogs\errors.log', level: 'error' }),
+      new winston.transports.File({ filename: 'D:\testtesttlogs\combined.log' }),
+      new winston.transports.File({ filename: 'D:\testtesttlogs\warns.log', level: 'warn' })
+    ]
+  });
+
+  //
+  // If we're not in production then log to the `console` with the format:
+  // `${info.level}: ${info.message} JSON.stringify({ ...rest }) `
+  // 
+  if (process.env.NODE_ENV !== 'production') {
+    logger.add(new winston.transports.Console({
+      format: winston.format.simple()
+    }));
+  }
+
+function writeLog(logMessage, level) {
+    switch (level) {
+        case 'error':
+            logger.error({
+                level: 'error',
+                message: logMessage
+            });
+        case 'warn':
+            logger.warn({
+                level: 'warn',
+                message: logMessage
+            });
+        case 'warn':
+            logger.info({
+                level: 'info',
+                message: logMessage
+            });
+    }
+
+}
+
+
+var express = require('express');
+var bodyParser = require('body-parser');
+var app = express();
 app.use(express.static(__dirname));
 
-app.use(bodyParser.urlencoded({ extended: false }))
+app.use(bodyParser.urlencoded({ extended: false }));
 
-app.use(bodyParser.json()) 
+app.use(bodyParser.json());
 
 app.use(function (req, res, next) {
 
@@ -34,7 +84,7 @@ app.use(function (req, res, next) {
 });
 
 app.get('/', function (req, res) {
-  res.send('Hello World')
+    res.send('Hello World')
 })
 
 const web3 = new Web3();
@@ -53,12 +103,12 @@ const web3 = new Web3();
 */
 function callContractGetMethod(res, provider, interface, contractAddress, method, args) {
     try {
-    web3.setProvider(new web3.providers.HttpProvider(provider));
+        web3.setProvider(new web3.providers.HttpProvider(provider));
         var contract = new web3.eth.Contract(interface, contractAddress);
         contract.methods[method](...args).call(function (err, result) {
             if (err) {
                 console.log(err);
-                res.end(JSON.stringify({ status: 0, error: err }));
+                res.end(JSON.stringify({ status: 0, error: err.message }));
             } else {
                 res.end(JSON.stringify({ status: 1, data: { args: result } }));
             }
@@ -133,7 +183,6 @@ function callContractSetMethod(res, provider, interface, contractAddress, wallet
     }
 }
 
-  
 /**
 @brief Call Contract Get Method
 @detailed This function allows you to call any Get method of a smart contract and get data from it
@@ -196,7 +245,7 @@ function deployContract(res, provider, walletAddress, key, abi, byteCode, gasLim
         res.end(JSON.stringify({ status: 0, error: err.message }));
     }
 }
- 
+
 
 function sendCoinTransaction(res, provider, fromWalletAddress, key, toWalletAddress, amount, responseToken, gasLimit, gasPrice) {
     try {
@@ -289,7 +338,7 @@ function callWeb3Method(res, provider, method, args) {
             res.end(JSON.stringify({ status: 1, data: result }));
         }, function (err) {
             console.log(err);
-            res.end(JSON.stringify({ status: 0, data: err }));
+            res.end(JSON.stringify({ status: 0, error: err.message }));
         });
     }
     catch (err) {
@@ -321,7 +370,7 @@ function estimateGasSetMethod(res, provider, interface, contractAddress, walletA
             res.end();
         }, function (err) {
             console.log(err);
-            res.end(JSON.stringify({ status: 0, error: err }));
+            res.end(JSON.stringify({ status: 0, error: err.message }));
         });
     }
     catch (err) {
@@ -329,7 +378,7 @@ function estimateGasSetMethod(res, provider, interface, contractAddress, walletA
     }
 }
 
-  function estimateGasDeployContract(res, provider, walletAddress, abi, byteCode, args) {
+function estimateGasDeployContract(res, provider, walletAddress, abi, byteCode, args) {
     try {
         web3.setProvider(new web3.providers.HttpProvider(provider));
         var contractInstance = new web3.eth.Contract(abi);
@@ -352,7 +401,7 @@ function estimateGasSetMethod(res, provider, interface, contractAddress, walletA
                 res.end();
             }, function (err) {
                 console.log(err);
-                res.end(JSON.stringify({ status: 0, error: err }));
+                res.end(JSON.stringify({ status: 0, error: err.message }));
             });
         });
     }
@@ -362,46 +411,86 @@ function estimateGasSetMethod(res, provider, interface, contractAddress, walletA
 }
 
 
-app.post('/callWeb3Method',function(req,res){
-	callWeb3Method(res, req.body.provider,req.body.name, req.body.args);
-    })
-
-app.post('/callContractGetMethod',function(req,res){
-	callContractGetMethod(res, req.body.provider, req.body.interface, req.body.contractAddress, req.body.name, req.body.args);
-    })
-    
-app.post('/sendCoinTransaction',function(req,res){
-    sendCoinTransaction(res,req.body.provider, req.body.fromWalletAddress, req.body.key,req.body.toWalletAddress,req.body.amount 
-        ,req.body.responseToken,req.body.gasLimit,req.body.gasPrice);
-    })
-        
-app.post('/callContractSetMethod',function(req,res){
-    callContractSetMethod(res,req.body.provider, req.body.interface, req.body.contractAddress,req.body.walletAddress,req.body.key 
-        ,req.body.name,req.body.amount,req.body.gasLimit,req.body.gasPrice,req.body.args, req.body.responseToken);
-    })
-
-app.post('/deployContract',function(req,res){
-    deployContract(res,req.body.provider,req.body.walletAddress , req.body.key,  req.body.abi, req.body.byteCode,req.body.gasLimit,req.body.gasPrice, req.body.responseToken, req.body.args);
+app.post('/callWeb3Method', function (req, res) {
+    try {
+        callWeb3Method(res, req.body.provider, req.body.name, req.body.args);
+    }
+    catch (err) {
+        res.end(JSON.stringify({ status: 0, error: err.message }));
+    }
 })
 
-app.post('/setDeferredOptions', function(req,res){
-    hostName = req.body.hostname;
-    portNumber = req.body.port;
-    responsePath = req.body.path;
-
-    res.end(JSON.stringify({ status: 1, data: "succeeded" }))
+app.post('/callContractGetMethod', function (req, res) {
+    try {
+        callContractGetMethod(res, req.body.provider, req.body.interface, req.body.contractAddress, req.body.name, req.body.args);
+    }
+    catch (err) {
+        res.end(JSON.stringify({ status: 0, error: err.message }));
+    }
 })
 
-app.post('/estimateGasDeployContract',function(req,res){
-	estimateGasDeployContract(res,req.body.provider,req.body.walletAddress 
-        ,req.body.abi,req.body.byteCode,req.body.args);
-    })
-
-app.post('/estimateGasSetMethod',function(req,res){
-estimateGasSetMethod(res,req.body.provider, req.body.abi, req.body.contractAddress,req.body.walletAddress 
-    ,req.body.name,req.body.amount,req.body.args);
+app.post('/sendCoinTransaction', function (req, res) {
+    try {
+        sendCoinTransaction(res, req.body.provider, req.body.fromWalletAddress, req.body.key, req.body.toWalletAddress, req.body.amount
+            , req.body.responseToken, req.body.gasLimit, req.body.gasPrice);
+    }
+    catch (err) {
+        res.end(JSON.stringify({ status: 0, error: err.message }));
+    }
 })
 
-app.listen(3000,'localhost')
+app.post('/callContractSetMethod', function (req, res) {
+    try {
+        callContractSetMethod(res, req.body.provider, req.body.interface, req.body.contractAddress, req.body.walletAddress, req.body.key
+            , req.body.name, req.body.amount, req.body.gasLimit, req.body.gasPrice, req.body.args, req.body.responseToken);
+    }
+    catch (err) {
+        res.end(JSON.stringify({ status: 0, error: err.message }));
+    }
+})
+
+app.post('/deployContract', function (req, res) {
+    try {
+        deployContract(res, req.body.provider, req.body.walletAddress, req.body.key, req.body.abi, req.body.byteCode, req.body.gasLimit, req.body.gasPrice, req.body.responseToken, req.body.args);
+    }
+    catch (err) {
+        res.end(JSON.stringify({ status: 0, error: err.message }));
+    }
+})
+
+app.post('/setDeferredOptions', function (req, res) {
+    try {
+        hostName = req.body.hostname;
+        portNumber = req.body.port;
+        responsePath = req.body.path;
+
+        res.end(JSON.stringify({ status: 1, data: "succeeded" }));
+    }
+    catch (err) {
+        res.end(JSON.stringify({ status: 0, error: err.message }));
+    }
+})
+
+app.post('/estimateGasDeployContract', function (req, res) {
+    try {
+        estimateGasDeployContract(res, req.body.provider, req.body.walletAddress
+            , req.body.abi, req.body.byteCode, req.body.args);
+    }
+    catch (err) {
+        res.end(JSON.stringify({ status: 0, error: err.message }));
+    }
+})
+
+app.post('/estimateGasSetMethod', function (req, res) {
+    try {
+        estimateGasSetMethod(res, req.body.provider, req.body.abi, req.body.contractAddress, req.body.walletAddress
+            , req.body.name, req.body.amount, req.body.args);
+    }
+    catch (err) {
+        res.end(JSON.stringify({ status: 0, error: err.message }));
+    }
+})
+
+app.listen(3000, 'localhost')
 console.log('run');
 

@@ -31,6 +31,34 @@ Method GetBalance(pRequest As Ethereum.Demo.BalanceRequest, Output pResponse As 
 	return $$$OK
 }
 
+Method SendFunds(pRequest As Ethereum.Demo.SendFundsRequest, Output pResponse As Ens.StringContainer) As %Status
+{
+	try {
+	    $$$ThrowOnError(..DeferResponse(.deferred))
+
+
+        // getting EthereumAccount(wallet) and privateKey
+        do ##class(Ens.Config.Credentials).GetCredentialsObj(.cred, "Ethereum.Demo.EthereumOperation", "Ens.Config.Credentials", ..Credentials)
+        set account = ##class(Ethereum.Address).%New(cred.Username)
+        set privateKey = cred.Password
+
+	    
+	    set st = ..Adapter.SendFunds(.result,account,
+                            privateKey,
+                            ##class(Ethereum.Address).%New(pRequest.ToAddress),
+                            ##class(Ethereum.Wei).WeiFromEther(pRequest.Amount),
+                            ##class(Ethereum.Wei).%New(2100000),
+                            ##class(Ethereum.Wei).%New(1000000000),
+                            deferred)
+        $$$ThrowOnError(st)
+        $$$TRACE(result.%ToJSON())
+        
+	} catch ex {
+	
+	}
+	return $$$OK
+}
+
 Method DeployContract(pRequest As Ethereum.Demo.DeployContractRequest, Output pResponse As Ens.StringContainer) As %Status
 {
 	try {
@@ -58,7 +86,7 @@ Method DeployContract(pRequest As Ethereum.Demo.DeployContractRequest, Output pR
                                     ##class(Ethereum.Wei).%New(2100000))
 
         // get Estimated Gas for this transaction
-        set gasJSON = deployContract.EstimateGas("test")
+        set gasJSON = deployContract.EstimateGas("test") // test - contract constuctor arg
         set gas = gasJSON.gas
         $$$TRACE(gas)
         
@@ -66,7 +94,8 @@ Method DeployContract(pRequest As Ethereum.Demo.DeployContractRequest, Output pR
         do deployContract.SetOptions(account, privateKey,
                                     ##class(Ethereum.Wei).%New(1000000000), // 1Gwei 
                                     ##class(Ethereum.Wei).%New(gas))              
-        set result = deployContract.Deploy("test")
+        
+        set result = deployContract.Deploy("test") // test - contract constuctor arg
         set pResponse = ##class(Ens.StringContainer).%New(result.transactionHash)
 		
 	} catch ex {
@@ -78,6 +107,8 @@ Method DeployContract(pRequest As Ethereum.Demo.DeployContractRequest, Output pR
 Method SetName(pRequest As Ethereum.Demo.SetNameRequest, Output pResponse As Ens.StringContainer) As %Status
 {
 	try {
+	    $$$ThrowOnError(..Adapter.SetDeferredOptions())
+	
         // getting EthereumAccount(wallet) and privateKey
 		do ##class(Ens.Config.Credentials).GetCredentialsObj(.cred, "Ethereum.Demo.EthereumOperation", "Ens.Config.Credentials", ..Credentials)
 		set account = ##class(Ethereum.Address).%New(cred.Username)
@@ -92,13 +123,14 @@ Method SetName(pRequest As Ethereum.Demo.SetNameRequest, Output pResponse As Ens
 		set contract = ..Adapter.GetContract(##class(Ethereum.Address).%New(..ContractAddress),..ContractABI)
         $$$ThrowOnError(..DeferResponse(.deferred))
 
+        // estimate gas
         do contract.SetOptions(account)
-        
         set gasJSON = contract.EstimateGas("setName",pRequest.Name)
         $$$TRACE(gasJSON.gas)
+        
         do contract.SetOptions(account, privateKey,
                                ##class(Ethereum.Wei).%New(1000000000), 
-                               ##class(Ethereum.Wei).%New(gasJSON.gas),,deferred)                              
+                               ##class(Ethereum.Wei).%New(100*gasJSON.gas),,deferred)                              
             
         set result = contract.setName(pRequest.Name) 
         $$$TRACE(result.transactionHash)
@@ -140,7 +172,12 @@ XData MessageMap
 	</MapItem>	
 	<MapItem MessageType="Ethereum.Demo.HelloRequest"> 
 		<Method>Hello</Method>
-	</MapItem>			
+	</MapItem>	
+    <MapItem MessageType="Ethereum.Demo.SendFundsRequest"> 
+        <Method>SendFunds</Method>
+    </MapItem>  
+	
+			
 </MapItems>
 }
 

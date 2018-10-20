@@ -15,14 +15,22 @@ Class Ethereum.Eth Extends %RegisteredObject
     Method GetBlockNumber() As %Integer
     {
         $$$ThrowOnError(..Adapter.CallWeb3Method(.response,"getBlockNumber",[]))
-        return response
+        if (response.status=1) {
+            return response.data
+        } else {
+            $$$ThrowStatus($$$ERROR($$$GeneralError, "Error: "_response.error))
+        }
     }
 
     /// Returns the current balance in wei for the given address at a given block. 
     Method GetBalance(address As Ethereum.Address, blockNumber As %String = "latest") As Ethereum.Wei
     {
         $$$ThrowOnError(..Adapter.CallWeb3Method(.response,"getBalance",[(address.Address),(blockNumber)]))
-        return ##class(Ethereum.Wei).%New($TRANSLATE(response,""""))
+        if (response.status=1) {
+            return ##class(Ethereum.Wei).%New(response.data) 
+        } else {
+            $$$ThrowStatus($$$ERROR($$$GeneralError, "Error: "_response.error))
+        }
     }
 
     /// Returns a block matching the block number or block hash.
@@ -34,7 +42,11 @@ Class Ethereum.Eth Extends %RegisteredObject
         set params = [(blockHashOrBlockNumber)]
         do params.%Push(returnTransactionObjects,"boolean")
         $$$ThrowOnError(..Adapter.CallWeb3Method(.response,"getBlock",params))
-        return {}.%FromJSON(response)
+        if (response.status=1) {
+            return response.data
+        } else {
+            $$$ThrowStatus($$$ERROR($$$GeneralError, "Error: "_response.error))
+        }        
     }
     
     /// Returns the number of transaction in a given block.
@@ -42,34 +54,53 @@ Class Ethereum.Eth Extends %RegisteredObject
     Method GetBlockTransactionCount(blockHashOrBlockNumber = "latest") As %Integer
     {
         $$$ThrowOnError(..Adapter.CallWeb3Method(.response,"getBlockTransactionCount",[(blockHashOrBlockNumber)]))
-        $$$TRACE(response)
-        return response
+        if (response.status=1) {
+            return response.data
+        } else {
+            $$$ThrowStatus($$$ERROR($$$GeneralError, "Error: "_response.error))
+        }        
     }
     
     /// Returns the current gas price. The gas price is determined by the last few blocks median gas price
     Method GetGasPrice() As Ethereum.Wei
     {
         $$$ThrowOnError(..Adapter.CallWeb3Method(.response,"getGasPrice",[]))
-        return ##class(Ethereum.Wei).%New($TRANSLATE(response,""""))
+        if (response.status=1) {
+            return ##class(Ethereum.Wei).%New(response.data)
+        } else {
+            $$$ThrowStatus($$$ERROR($$$GeneralError, "Error: "_response.error))
+        }          
     }
     
     Method GetStorageAt(address As Ethereum.Address, position As %Integer=0, blockNumber As %String = "latest") As %String
     {
         $$$ThrowOnError(..Adapter.CallWeb3Method(.response,"getStorageAt",[(address.Address),(position),(blockNumber)]))
-        return response
+        if (response.status=1) {
+            return response.data
+        } else {
+            $$$ThrowStatus($$$ERROR($$$GeneralError, "Error: "_response.error))
+        }
     }
     
     Method GetCode(address As Ethereum.Address,blockNumber As %String = "latest") As %String
     {
         $$$ThrowOnError(..Adapter.CallWeb3Method(.response,"getCode",[(address.Address),(blockNumber)]))
-        return response
+        if (response.status=1) {
+            return response.data
+        } else {
+            $$$ThrowStatus($$$ERROR($$$GeneralError, "Error: "_response.error))
+        }
     }
     
     /// Returns a transaction matching the given transaction hash
     Method GetTransaction(transactionHash As %String) As %Library.DynamicObject
     {
         $$$ThrowOnError(..Adapter.CallWeb3Method(.response,"getTransaction",[(transactionHash)]))
-        return {}.%FromJSON(response)
+        if (response.status=1) {
+            return response.data
+        } else {
+            $$$ThrowStatus($$$ERROR($$$GeneralError, "Error: "_response.error))
+        }
     }
     
     /// Returns a transaction based on a block hash or number and the transactions index position.
@@ -78,15 +109,22 @@ Class Ethereum.Eth Extends %RegisteredObject
     Method GetTransactionFromBlock(blockHashOrNumber As %String = "latest", index As %Integer = 0) As %Library.DynamicObject
     {
         $$$ThrowOnError(..Adapter.CallWeb3Method(.response,"getTransactionFromBlock",[(blockHashOrNumber),(index)]))
-        return {}.%FromJSON(response)
+        if (response.status=1) {
+            return response.data
+        } else {
+            $$$ThrowStatus($$$ERROR($$$GeneralError, "Error: "_response.error))
+        }
     }
     
     /// Returns the receipt of a transaction by transaction hash
     Method GetTransactionReceipt(hash As %String) As %Library.DynamicObject
     {
         $$$ThrowOnError(..Adapter.CallWeb3Method(.response,"getTransactionReceipt",[(hash)]))
-        if (response="null") { return {} }
-        return {}.%FromJSON(response)
+        if (response.status=1) {
+            return response.data
+        } else {
+            $$$ThrowStatus($$$ERROR($$$GeneralError, "Error: "_response.error))
+        }
     }
     
     /// Returns the number of transactions sent from the given address.
@@ -95,6 +133,10 @@ Class Ethereum.Eth Extends %RegisteredObject
     Method GetTransactionCount(address As Ethereum.Address,blockNumber As %String = "latest") As %Integer
     {
         $$$ThrowOnError(..Adapter.CallWeb3Method(.response,"getTransactionCount",[(address.Address),(blockNumber)]))
-        return response
+        if (response.status=1) {
+            return response.data
+        } else {
+            $$$ThrowStatus($$$ERROR($$$GeneralError, "Error: "_response.error))
+        }        
     }
 }
