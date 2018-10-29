@@ -5,61 +5,11 @@
 // npm install winston
 
 var Web3 = require('web3');
-var winston = require('winston');
+var logger = require('./logger');
 
 var hostName;
 var portNumber;
 var responsePath;
-
-const logger = winston.createLogger({
-    level: 'info',
-    format: winston.format.combine(
-        winston.format.timestamp({
-          format: 'YYYY-MM-DD HH:mm:ss'
-        }),
-        winston.format.json()),
-    transports: [
-      //
-      // - Write to all logs with level `info` and below to `combined.log` 
-      // - Write all logs error (and below) to `error.log`.
-      //
-      new winston.transports.File({ filename: 'D:\testtesttlogs\errors.log', level: 'error' }),
-      new winston.transports.File({ filename: 'D:\testtesttlogs\combined.log' }),
-      new winston.transports.File({ filename: 'D:\testtesttlogs\warns.log', level: 'warn' })
-    ]
-  });
-
-  //
-  // If we're not in production then log to the `console` with the format:
-  // `${info.level}: ${info.message} JSON.stringify({ ...rest }) `
-  // 
-  if (process.env.NODE_ENV !== 'production') {
-    logger.add(new winston.transports.Console({
-      format: winston.format.simple()
-    }));
-  }
-
-function writeLog(logMessage, level) {
-    switch (level) {
-        case 'error':
-            logger.error({
-                level: 'error',
-                message: logMessage
-            });
-        case 'warn':
-            logger.warn({
-                level: 'warn',
-                message: logMessage
-            });
-        case 'warn':
-            logger.info({
-                level: 'info',
-                message: logMessage
-            });
-    }
-
-}
-
 
 var express = require('express');
 var bodyParser = require('body-parser');
@@ -108,13 +58,55 @@ function callContractGetMethod(res, provider, interface, contractAddress, method
         contract.methods[method](...args).call(function (err, result) {
             if (err) {
                 console.log(err);
+                logger.writeLog(
+                    {
+                        methodName: 'callContractGetMethod',
+                        callParameters:
+                        {
+                            provider: provider,
+                            interface: interface,
+                            contractAddress: contractAddress,
+                            method: method,
+                            args: args
+                        },
+                        errorMessage: err.message
+                    },
+                    'error');
                 res.end(JSON.stringify({ status: 0, error: err.message }));
             } else {
                 res.end(JSON.stringify({ status: 1, data: { args: result } }));
+                logger.writeLog(
+                    {
+                        methodName: 'callContractGetMethod',
+                        callParameters:
+                        {
+                            provider: provider,
+                            interface: interface,
+                            contractAddress: contractAddress,
+                            method: method,
+                            args: args
+                        },
+                        data: result
+                    },
+                    'info');
             }
         });
     }
     catch (err) {
+        logger.writeLog(
+            {
+                methodName: 'callContractGetMethod',
+                callParameters:
+                {
+                    provider: provider,
+                    interface: interface,
+                    contractAddress: contractAddress,
+                    method: method,
+                    args: args
+                },
+                errorMessage: err.message
+            },
+            'error');
         res.end(JSON.stringify({ status: 0, error: err.message }));
     }
 }
@@ -163,6 +155,26 @@ function callContractSetMethod(res, provider, interface, contractAddress, wallet
                 console.log(hash);
 
                 res.end(JSON.stringify({ status: 1, data: { transactionHash: hash } }));
+
+                logger.writeLog(
+                    {
+                        methodName: 'callContractSetMethod',
+                        callParameters:
+                        {  
+                            provider: provider,
+                            interface: interface,
+                            contractAddress: contractAddress,
+                            walletAddress: walletAddress,
+                            key : key,
+                            method: method,
+                            amount: amount,
+                            gasLimit: gasLimit,
+                            gasPrice: gasPrice,
+                            args: args,
+                            responseToken: responseToken
+                        },
+                    },
+                    'info');
             });
 
             tran.on('receipt', receipt => {
@@ -174,12 +186,55 @@ function callContractSetMethod(res, provider, interface, contractAddress, wallet
 
             tran.on('error', error => {
                 console.log(error);
+
+                res.end(JSON.stringify({ status: 0, error: error.message }));
+        
                 deferredRequest(responseToken, 0, error);
+                logger.writeLog(
+                    {
+                        methodName: 'callContractSetMethod',
+                        callParameters:
+                        {  
+                            provider: provider,
+                            interface: interface,
+                            contractAddress: contractAddress,
+                            walletAddress: walletAddress,
+                            key : key,
+                            method: method,
+                            amount: amount,
+                            gasLimit: gasLimit,
+                            gasPrice: gasPrice,
+                            args: args,
+                            responseToken: responseToken
+                        },
+                        errorMessage: error.message
+                    },
+                    'error');
             });
         });
     }
     catch (err) {
         res.end(JSON.stringify({ status: 0, error: err.message }));
+        logger.writeLog(
+            {
+                methodName: 'callContractSetMethod',
+                callParameters:
+                {  
+                    provider: provider,
+                    interface: interface,
+                    contractAddress: contractAddress,
+                    walletAddress: walletAddress,
+                    key : key,
+                    method: method,
+                    amount: amount,
+                    gasLimit: gasLimit,
+                    gasPrice: gasPrice,
+                    args: args,
+                    responseToken: responseToken
+                },
+                errorMessage: err.message
+            },
+            'error');
     }
 }
 
@@ -224,6 +279,25 @@ function deployContract(res, provider, walletAddress, key, abi, byteCode, gasLim
                 console.log(hash);
 
                 res.end(JSON.stringify({ status: 1, data: { transactionHash: hash } }));
+
+                logger.writeLog(
+                    {
+                        methodName: 'deployContract',
+                        callParameters:
+                        {  
+                            provider: provider,
+                            abi: abi,
+                            walletAddress: walletAddress,
+                            key : key,
+                            method: method,
+                            byteCode: byteCode,
+                            gasLimit: gasLimit,
+                            gasPrice: gasPrice,
+                            args: args,
+                            responseToken: responseToken
+                        },
+                    },
+                    'info');
             });
 
             tran.on('receipt', receipt => {
@@ -237,12 +311,52 @@ function deployContract(res, provider, walletAddress, key, abi, byteCode, gasLim
 
             tran.on('error', error => {
                 console.log(error);
+                res.end(JSON.stringify({ status: 0, error: error.message }));
+        
                 deferredRequest(responseToken, 0, error);
+                logger.writeLog(
+                    {
+                        methodName: 'deployContract',
+                        callParameters:
+                        {  
+                            provider: provider,
+                            abi: abi,
+                            walletAddress: walletAddress,
+                            key : key,
+                            method: method,
+                            byteCode: byteCode,
+                            gasLimit: gasLimit,
+                            gasPrice: gasPrice,
+                            args: args,
+                            responseToken: responseToken
+                        },
+                        errorMessage: error.message
+                    },
+                    'error');
             });
         });
     }
     catch (err) {
         res.end(JSON.stringify({ status: 0, error: err.message }));
+        logger.writeLog(
+            {
+                methodName: 'deployContract',
+                callParameters:
+                {  
+                    provider: provider,
+                    abi: abi,
+                    walletAddress: walletAddress,
+                    key : key,
+                    method: method,
+                    byteCode: byteCode,
+                    gasLimit: gasLimit,
+                    gasPrice: gasPrice,
+                    args: args,
+                    responseToken: responseToken
+                },
+                errorMessage: err.message
+            },
+            'error');
     }
 }
 
@@ -250,7 +364,6 @@ function deployContract(res, provider, walletAddress, key, abi, byteCode, gasLim
 function sendCoinTransaction(res, provider, fromWalletAddress, key, toWalletAddress, amount, responseToken, gasLimit, gasPrice) {
     try {
         web3.setProvider(new web3.providers.HttpProvider(provider));
-
         var privateKey = "0x" + key;
         var tx = {
             from: fromWalletAddress,
@@ -258,7 +371,7 @@ function sendCoinTransaction(res, provider, fromWalletAddress, key, toWalletAddr
             nonce: web3.eth.getTransactionCount(fromWalletAddress),
             gasLimit: gasLimit,
             gasPrice: gasPrice,
-            value: web3.utils.toWei(amount, "ether")
+            value: amount//web3.utils.toWei(amount, "ether")
         };
 
         web3.eth.accounts.signTransaction(tx, privateKey).then(signed => {
@@ -273,6 +386,22 @@ function sendCoinTransaction(res, provider, fromWalletAddress, key, toWalletAddr
                 console.log(hash);
 
                 res.end(JSON.stringify({ status: 1, data: { transactionHash: hash } }));
+               logger.writeLog(
+                    {
+                        methodName: 'sendCoinTransaction',
+                        callParameters:
+                        {  
+                            provider: provider,
+                            fromWalletAddress: fromWalletAddress,
+                            key : key,
+                            toWalletAddress: toWalletAddress,
+                            amount: amount,
+                            gasLimit: gasLimit,
+                            gasPrice: gasPrice,
+                            responseToken: responseToken
+                        },
+                    },
+                    'info');
             });
 
             tran.on('receipt', receipt => {
@@ -282,13 +411,48 @@ function sendCoinTransaction(res, provider, fromWalletAddress, key, toWalletAddr
             });
 
             tran.on('error', error => {
-                console.log(error);
+                res.end(JSON.stringify({ status: 0, error: error.message }));
+        
                 deferredRequest(responseToken, 0, error);
+                logger.writeLog(
+                    {
+                        methodName: 'sendCoinTransaction',
+                        callParameters:
+                        {  
+                            provider: provider,
+                            fromWalletAddress: fromWalletAddress,
+                            key : key,
+                            toWalletAddress: toWalletAddress,
+                            amount: amount,
+                            gasLimit: gasLimit,
+                            gasPrice: gasPrice,
+                            responseToken: responseToken
+                        },
+                        errorMessage: error.message
+                    },
+                    'error');
             });
         });
     }
     catch (err) {
         res.end(JSON.stringify({ status: 0, error: err.message }));
+        logger.writeLog(
+            {
+                methodName: 'sendCoinTransaction',
+                callParameters:
+                {  
+                    provider: provider,
+                    fromWalletAddress: fromWalletAddress,
+                    key : key,
+                    toWalletAddress: toWalletAddress,
+                    amount: amount,
+                    gasLimit: gasLimit,
+                    gasPrice: gasPrice,
+                    responseToken: responseToken
+                },
+                errorMessage: err.message
+            },
+            'error');
     }
 }
 
@@ -320,10 +484,34 @@ function deferredRequest(responseToken, status, data) {
             console.log('problem with request: ' + e.message);
         });
         var dataToSend;
-        if (status == 0)
+        if (status == 0){
             dataToSend = JSON.stringify({ status: status, error: { responseToken: responseToken, data: data } });
-        else
+            logger.writeLog(
+                {
+                    methodName: 'deferredRequest',
+                    callParameters:
+                    {  
+                        responseToken: responseToken,
+                        status: status
+                    },
+                    errorMessage: err.data
+                },
+                'error');
+        }
+        else{
             dataToSend = JSON.stringify({ status: status, data: { responseToken: responseToken, data: data } });
+            logger.writeLog(
+                {
+                    methodName: 'deferredRequest',
+                    callParameters:
+                    {  
+                        responseToken: responseToken,
+                        status: status,
+                        data: data
+                    }
+                },
+                'info');
+        }
         req.write(dataToSend);
         req.end();
     }
@@ -336,14 +524,50 @@ function callWeb3Method(res, provider, method, args) {
 
         web3.eth[method](...args).then(function (result) {
             res.end(JSON.stringify({ status: 1, data: result }));
+            logger.writeLog(
+                {
+                    methodName: 'callWeb3Method',
+                    callParameters:
+                    {  
+                        provider: provider,
+                        method: method,
+                        args: args,
+                        result: result
+                    }
+                },
+                'info');
         }, function (err) {
             console.log(err);
             res.end(JSON.stringify({ status: 0, error: err.message }));
+            logger.writeLog(
+                {
+                    methodName: 'callWeb3Method',
+                    callParameters:
+                    {  
+                        provider: provider,
+                        method: method,
+                        args: args
+                    },
+                    error: err.message
+                },
+                'error');
         });
     }
     catch (err) {
         res.statusCode = 400;
         res.end(JSON.stringify({ status: 0, error: err.message }));
+        logger.writeLog(
+            {
+                methodName: 'callWeb3Method',
+                callParameters:
+                {  
+                    provider: provider,
+                    method: method,
+                    args: args
+                },
+                error: err.message
+            },
+            'error');
     }
 }
 
@@ -368,13 +592,61 @@ function estimateGasSetMethod(res, provider, interface, contractAddress, walletA
             console.log(result);
             res.write(JSON.stringify({ status: 1, data: { gas: result } }));
             res.end();
+            logger.writeLog(
+                {
+                    methodName: 'estimateGasSetMethod',
+                    callParameters:
+                    {  
+                        provider: provider,
+                        interface: interface,
+                        contractAddress: contractAddress,
+                        walletAddress: walletAddress,
+                        method: method,
+                        amount,amount,
+                        args: args,
+                        result: result
+                    }
+                },
+                'info');
         }, function (err) {
             console.log(err);
             res.end(JSON.stringify({ status: 0, error: err.message }));
+            logger.writeLog(
+                {
+                    methodName: 'estimateGasSetMethod',
+                    callParameters:
+                    {  
+                        provider: provider,
+                        interface: interface,
+                        contractAddress: contractAddress,
+                        walletAddress: walletAddress,
+                        method: method,
+                        amount,amount,
+                        args: args
+                    },
+                    error: err.message
+                },
+                'error');
         });
     }
     catch (err) {
         res.end(JSON.stringify({ status: 0, error: err.message }));
+        logger.writeLog(
+            {
+                methodName: 'estimateGasSetMethod',
+                callParameters:
+                {  
+                    provider: provider,
+                    interface: interface,
+                    contractAddress: contractAddress,
+                    walletAddress: walletAddress,
+                    method: method,
+                    amount,amount,
+                    args: args
+                },
+                error: err.message
+            },
+            'error');
     }
 }
 
@@ -399,14 +671,56 @@ function estimateGasDeployContract(res, provider, walletAddress, abi, byteCode, 
 
                 res.write(JSON.stringify({ status: 1, data: { gas: result } }));
                 res.end();
+                logger.writeLog(
+                    {
+                        methodName: 'estimateGasDeployContract',
+                        callParameters:
+                        {  
+                            provider: provider,
+                            abi: abi,
+                            walletAddress: walletAddress,
+                            byteCode: byteCode,
+                            args: args,
+                            result: result
+                        }
+                    },
+                    'info');
             }, function (err) {
                 console.log(err);
                 res.end(JSON.stringify({ status: 0, error: err.message }));
+                logger.writeLog(
+                    {
+                        methodName: 'estimateGasDeployContract',
+                        callParameters:
+                        {  
+                            provider: provider,
+                            abi: abi,
+                            walletAddress: walletAddress,
+                            byteCode: byteCode,
+                            args: args
+                        },
+                        error: err.message
+                    },
+                    'error');
             });
         });
     }
     catch (err) {
         res.end(JSON.stringify({ status: 0, error: err.message }));
+        logger.writeLog(
+            {
+                methodName: 'estimateGasDeployContract',
+                callParameters:
+                {  
+                    provider: provider,
+                    abi: abi,
+                    walletAddress: walletAddress,
+                    byteCode: byteCode,
+                    args: args
+                },
+                error: err.message
+            },
+            'error');
     }
 }
 
@@ -417,6 +731,19 @@ app.post('/callWeb3Method', function (req, res) {
     }
     catch (err) {
         res.end(JSON.stringify({ status: 0, error: err.message }));
+
+        logger.writeLog(
+            {
+                methodName: 'callWeb3Method',
+                callParameters:
+                {  
+                    provider: req.body.provider,
+                    name: req.body.name,
+                    args: req.body.provider.args
+                },
+                error: err.message
+            },
+            'error');
     }
 })
 
@@ -426,6 +753,21 @@ app.post('/callContractGetMethod', function (req, res) {
     }
     catch (err) {
         res.end(JSON.stringify({ status: 0, error: err.message }));
+
+        logger.writeLog(
+            {
+                methodName: 'callContractGetMethod',
+                callParameters:
+                {  
+                    provider: req.body.provider,
+                    interface: req.body.interface,
+                    contractAddress: req.body.contractAddress,
+                    name: req.body.name,
+                    args: req.body.provider.args
+                },
+                error: err.message
+            },
+            'error');
     }
 })
 
@@ -436,6 +778,24 @@ app.post('/sendCoinTransaction', function (req, res) {
     }
     catch (err) {
         res.end(JSON.stringify({ status: 0, error: err.message }));
+        logger.writeLog(
+            {
+                methodName: 'sendCoinTransaction',
+                callParameters:
+                {  
+                    provider: req.body.provider,
+                    fromWalletAddress: req.body.fromWalletAddress,
+                    contractAddress: req.body.contractAddress,
+                    key: req.body.key,
+                    toWalletAddress: req.body.toWalletAddress,
+                    amount: req.body.amount,
+                    responseToken: req.body.responseToken,
+                    gasLimit: req.body.gasLimit,
+                    gasPrice: req.body.gasPrice
+                },
+                error: err.message
+            },
+            'error');
     }
 })
 
@@ -446,6 +806,25 @@ app.post('/callContractSetMethod', function (req, res) {
     }
     catch (err) {
         res.end(JSON.stringify({ status: 0, error: err.message }));
+        logger.writeLog(
+            {
+                methodName: 'callContractSetMethod',
+                callParameters:
+                {  
+                    provider: req.body.provider,
+                    interface: req.body.interface,
+                    contractAddress: req.body.contractAddress,
+                    walletAddress: req.body.walletAddress,
+                    key: req.body.key,
+                    name: req.body.name,
+                    responseToken: req.body.responseToken,
+                    gasLimit: req.body.gasLimit,
+                    gasPrice: req.body.gasPrice,
+                    args: req.body.args
+                },
+                error: err.message
+            },
+            'error');
     }
 })
 
@@ -455,6 +834,24 @@ app.post('/deployContract', function (req, res) {
     }
     catch (err) {
         res.end(JSON.stringify({ status: 0, error: err.message }));
+        logger.writeLog(
+            {
+                methodName: 'deployContract',
+                callParameters:
+                {  
+                    provider: req.body.provider,
+                    walletAddress: req.body.walletAddress,
+                    key: req.body.key,
+                    abi: req.body.abi,
+                    byteCode : req.body.byteCode,
+                    responseToken: req.body.responseToken,
+                    gasLimit: req.body.gasLimit,
+                    gasPrice: req.body.gasPrice,
+                    args: req.body.args
+                },
+                error: err.message
+            },
+            'error');
     }
 })
 
@@ -465,9 +862,32 @@ app.post('/setDeferredOptions', function (req, res) {
         responsePath = req.body.path;
 
         res.end(JSON.stringify({ status: 1, data: "succeeded" }));
+        logger.writeLog(
+            {
+                methodName: 'setDeferredOptions',
+                callParameters:
+                {  
+                    hostName: req.body.hostname,
+                    portNumber: req.body.port,
+                    responsePath: req.body.path
+                }
+            },
+            'info');
     }
     catch (err) {
         res.end(JSON.stringify({ status: 0, error: err.message }));
+        logger.writeLog(
+            {
+                methodName: 'setDeferredOptions',
+                callParameters:
+                {  
+                    hostName: req.body.hostname,
+                    portNumber: req.body.port,
+                    responsePath: req.body.path
+                },
+                error: err.message
+            },
+            'error');
     }
 })
 
@@ -478,6 +898,20 @@ app.post('/estimateGasDeployContract', function (req, res) {
     }
     catch (err) {
         res.end(JSON.stringify({ status: 0, error: err.message }));
+        logger.writeLog(
+            {
+                methodName: 'estimateGasDeployContract',
+                callParameters:
+                {  
+                    provider: req.body.provider,
+                    walletAddress: req.body.walletAddress,
+                    abi: req.body.abi,
+                    byteCode: req.body.byteCode, 
+                    args: req.body.args
+                },
+                error: err.message
+            },
+            'error');
     }
 })
 
@@ -488,9 +922,87 @@ app.post('/estimateGasSetMethod', function (req, res) {
     }
     catch (err) {
         res.end(JSON.stringify({ status: 0, error: err.message }));
+        logger.writeLog(
+            {
+                methodName: 'estimateGasSetMethod',
+                callParameters:
+                {  
+                    provider: req.body.provider,
+                    walletAddress: req.body.walletAddress,
+                    abi: req.body.abi,
+                    contractAddress:  req.body.contractAddress,
+                    name: req.body.name, 
+                    amount: req.body.amount,
+                    args: req.body.args
+                },
+                error: err.message
+            },
+            'error');
+    }
+})
+
+app.post('/setLogger', function (req, res) {
+    try {
+        logger.setLogger(req.body.level, req.body.pathToFile);
+
+        res.end(JSON.stringify({ status: 1, data: "succeeded" }));
+        logger.writeLog(
+            {
+                methodName: 'setLogger',
+                callParameters:
+                {  
+                    level: req.body.level,
+                    pathToFile: req.body.pathToFile
+                }
+            },
+            'info');
+    }
+    catch (err) {
+        res.end(JSON.stringify({ status: 0, error: err.message }));
+        logger.writeLog(
+            {
+                methodName: 'setLogger',
+                callParameters:
+                {  
+                    level: req.body.level,
+                    pathToFile: req.body.pathToFile
+                },
+                error: err.message
+            },
+            'error');
+    }
+})
+
+app.post('/disableLogger', function (req, res) {
+    try {
+        logger.disableLogger(req.body.level);
+
+        res.end(JSON.stringify({ status: 1, data: "succeeded" }));
+
+        logger.writeLog(
+            {
+                methodName: 'disableLogger',
+                callParameters:
+                {  
+                    level: req.body.level
+                }
+            },
+            'info');
+    }
+    catch (err) {
+        res.end(JSON.stringify({ status: 0, error: err.message }));
+        logger.writeLog(
+            {
+                methodName: 'disableLogger',
+                callParameters:
+                {  
+                    level: req.body.level
+                },
+                error: err.message
+            },
+            'error');
     }
 })
 
 app.listen(3000, 'localhost')
 console.log('run');
-

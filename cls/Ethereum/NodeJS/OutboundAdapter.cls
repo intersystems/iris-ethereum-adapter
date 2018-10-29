@@ -1,9 +1,9 @@
 Class Ethereum.NodeJS.OutboundAdapter extends EnsLib.HTTP.OutboundAdapter
 {
 
-    Parameter CHARSET = "UTF-8";
+    Parameter CHARSET = "UTF-8"; 
 
-    Parameter SETTINGS = "Provider:Ethereum,DeferredResponseHost:Ethereum,DeferredResponsePort:Ethereum,DeferredResponsePath:Ethereum";
+    Parameter SETTINGS = "Provider:Ethereum,DeferredResponseHost:Ethereum,DeferredResponsePort:Ethereum,DeferredResponsePath:Ethereum,LoggerLevel:Ethereum,LoggerFolder:Ethereum";
     
     /// Enter full path to http provider you use to connect to Ethereum network<br><br>
     /// https://*network*.infura.io/*your-api-key*<br>
@@ -11,14 +11,25 @@ Class Ethereum.NodeJS.OutboundAdapter extends EnsLib.HTTP.OutboundAdapter
     /// and choose *network* here https://infura.io/docs/gettingStarted/chooseaNetwork
     Property Provider;  
     
-    // Deferred Response Host (e.g. localhost), IRIS web-server host, where IRIS is ready to receive requests
+    /// Deferred Response Host (e.g. localhost), IRIS web-server host, where IRIS is ready to receive requests
     Property DeferredResponseHost [InitialExpression = "" ];
     
-    // Deferred Response Port (e.g. 57772), IRIS web-server port
+    /// Deferred Response Port (e.g. 57772), IRIS web-server port
     Property DeferredResponsePort [InitialExpression = "" ];
     
-    // Deferred Response Path (e.g. /eth/deferred), full path, including IRIS web-app (/eth) and routing path (/deferred)
+    /// Deferred Response Path (e.g. /eth/deferred), full path, including IRIS web-app (/eth) and routing path (/deferred)
     Property DeferredResponsePath [InitialExpression = "" ];
+    
+    /// Set Nodejs module error logger level
+    /// E - errors in errors.log, 
+    /// A - all requests in access.log,
+    /// EA - both
+    Property LoggerLevel; 
+    
+    /// path to folder for Nodejs module logs
+    Property LoggerFolder [InitialExpression = "log" ];
+    
+    
      
     Property Eth As Ethereum.Eth;
     
@@ -27,6 +38,7 @@ Class Ethereum.NodeJS.OutboundAdapter extends EnsLib.HTTP.OutboundAdapter
         set ..Eth = ##class(Ethereum.Eth).%New($this)
         return:('$isObject(..Eth)) $$$ERROR($$$GeneralError, "Unable to create Eth object") 
         do ..SetDeferredOptions()
+        do ..SetLoggerOptions()
         return $$$OK
     }
     
@@ -56,6 +68,29 @@ Class Ethereum.NodeJS.OutboundAdapter extends EnsLib.HTTP.OutboundAdapter
 		set request.Location=$e(location,2,$l(location)) 
 		do request.EntityBody.Write(data)
 		quit request
+	}
+	
+	Method SetLoggerOptions() As %Status
+	{
+	    set (tSCi,tSCe) = 1
+	    if (..LoggerLevel["E") {
+	        set data = {
+	            "level":"error",
+                "pathToFile":(..LoggerFolder_"/errors.log")
+            }
+            set tSCe = ..SendFormDataArray(.pHttpResponse, "POST", ..GetRequest(..URL_"/setLogger",data.%ToJSON()))
+            $$$TRACE(data.%ToJSON())
+        }
+        if (..LoggerLevel["A") {
+            set data = {
+                "level":"access",
+                "pathToFile":(..LoggerFolder_"/access.log")
+            }
+            set tSCi = ..SendFormDataArray(.pHttpResponse, "POST", ..GetRequest(..URL_"/setLogger",data.%ToJSON()))
+            $$$TRACE(data.%ToJSON())
+        }
+        return $$$ADDSC(tSCi,tSCe)
+		
 	}
 	
 	Method SetDeferredOptions() As %Status
@@ -105,12 +140,11 @@ Class Ethereum.NodeJS.OutboundAdapter extends EnsLib.HTTP.OutboundAdapter
             "fromWalletAddress":(accountAddress.Address),
             "key":(accountKey),
             "toWalletAddress":(toAddress.Address),
-            "amount":(amount.ToEther()),
+            "amount":(amount.WeiGet()),
             "responseToken":(deferred),
             "gasLimit":(gasLimit.WeiGet()),
             "gasPrice":(gasPrice.WeiGet())
         }
-        do data.%Set("amount",amount.ToEther(),"string")
         $$$TRACE(data.%ToJSON())
         set tSC = ..SendFormDataArray(.pHttpResponse, "POST", ..GetRequest(..URL_"/sendCoinTransaction",data.%ToJSON()))
         if ($$$ISOK(tSC)) {
