@@ -90,7 +90,7 @@ Class Ethereum.DeployContract Extends %RegisteredObject
         set params = []
         for i=1:1:args {
             if ('$data(args(i))) {
-                throw ##class(%Exception.StatusException).CreateFromStatus($$$ERROR($$$GeneralError, "All arguments are required"))
+                $$$ThrowStatus($$$ERROR($$$GeneralError, "All arguments are required"))
             }
             do params.%Push(args(i))
         }
@@ -104,7 +104,7 @@ Class Ethereum.DeployContract Extends %RegisteredObject
         set params = []
         for i=1:1:args {
             if ('$data(args(i))) {
-                throw ##class(%Exception.StatusException).CreateFromStatus($$$ERROR($$$GeneralError, "All arguments are required"))
+                $$$ThrowStatus($$$ERROR($$$GeneralError, "All arguments are required"))
             }
             do params.%Push(args(i))
         }
