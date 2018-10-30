@@ -491,7 +491,7 @@ function deferredRequest(responseToken, status, data) {
                         responseToken: responseToken,
                         status: status
                     },
-                    errorMessage: err.data
+                    errorMessage: data
                 },
                 'error');
         }
