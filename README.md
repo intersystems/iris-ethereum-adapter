@@ -39,3 +39,53 @@ Requests such as deploying a smart contract or calling a state-changing method c
     * DeferredResponseHost, DeferredResponsePort, DeferredResponsePath
 
 4. Ethereum.TestOperation.cls contains sample code to use 
+
+## How to start Demo
+0. Before starting Demo
+   * Chose Ethereum test network you will work with (we used ropsten)
+   * Create a Ethereum wallet (account) in the selected network - the easiest way to do this is using the browser metamask plugin
+   * Use https://faucet.ropsten.be/ to get test coins
+   * In order to work with Ethereum, you need to either install the blockchain node locally (for example, by installing Geth) or use the Infura cloud service. (We used Infura). To use Infura - register at https://infura.io/ and get your key to work with the Infura API
+
+1. Install adapter
+
+2. Create a new web application
+   * name: **/adaptertest**
+   * Namespace: <yournamespace>
+   * Enable: REST
+   * Dispatch Class: **Ethereum.Demo.REST**
+   
+3. In the Interoperability->Configure->Credentials section of the Management Portal, create credentials
+   * ID - any string (demo)
+   * UserName - your Ethereum wallet address 
+   * Password - your Private key
+   
+4. In the Management Portal open Ethereum.Demo.Production
+
+5. For  Ethereum.Demo.EthereumOperation specify settings:
+   * Provider  (https://ropsten.infura.io/<YourInfuraKey>)
+   * DeferredResponseHost (localhost)
+   * DeferredResponsePort (52773)
+   * DeferredResponsePath (/adaptertest/deferred) (the application you created in step 2)
+   * LoggerLevel:EA
+   * LoggerFolder: log (in the nodejs folder create a subfolder log with write permissions) 
+   * ContractFolder: /fullpathto/iris-ethereum-adapter/smartcontract/ (including trailing slash)
+   * Credentials: demo (the credentials you created in step 3)
+And Apply settings
+   
+6. Start Production
+
+7. Using IRIS Interoperability Testing Service test  Ethereum.Demo.EthereumOperation 
+   * send Ethereum.Demo.BalanceRequest with your wallet address
+   * send Ethereum.Demo.DeployContractRequest with fullpath to smartcontrant’s folder 
+      You will receive transaction hash. Copy this hash, open and find the transaction by hash on https://ropsten.etherscan.io/. 
+      Copy Contract Address
+
+8. Specify Contract Address in appropriate setting of the Ethereum.Demo.Ethereum Operation component
+
+9. Continue testing  Ethereum.Demo.EthereumOperation
+   * send Ethereum.Demo.HelloRequest
+   * send Ethereum.Demo.SetNameRequest with your name
+   * send Ethereum.Demo.HelloRequest again
+
+
