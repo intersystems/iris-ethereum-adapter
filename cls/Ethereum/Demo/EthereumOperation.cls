@@ -130,7 +130,7 @@ Method SetName(pRequest As Ethereum.Demo.SetNameRequest, Output pResponse As Ens
         
         do contract.SetOptions(account, privateKey,
                                ##class(Ethereum.Wei).%New(1000000000), 
-                               ##class(Ethereum.Wei).%New(100*gasJSON.gas),,deferred)                              
+                               ##class(Ethereum.Wei).%New(gasJSON.gas),,deferred)                              
             
         set result = contract.setName(pRequest.Name) 
         $$$TRACE(result.transactionHash)
