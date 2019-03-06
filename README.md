@@ -89,4 +89,4 @@ And Apply settings
    * send Ethereum.Demo.HelloRequest again
 
 
-For more information, sample code and discussion, go to the article on community.intersystems.com https://community.intersystems.com/post/ethereum-adapter-intersystems-iris-data-platform
+For more information, sample code and discussion, go to the [article on community.intersystems.com]( https://community.intersystems.com/post/ethereum-adapter-intersystems-iris-data-platform)
